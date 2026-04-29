@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — MedSecure</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:    #070c18;
+      --card:  #0d1424;
+      --panel: #111827;
+      --bdr:   rgba(255,255,255,0.07);
+      --pri:   #0a84ff;
+      --acc:   #00d68f;
+      --warn:  #ff9500;
+      --info:  #5ac8fa;
+      --t1:    #eef2ff;
+      --t2:    #8b9fc0;
+      --t3:    #4a5568;
+      --r:     10px;
+      --font:  'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      --mono:  'JetBrains Mono','Fira Code','Courier New',monospace;
+    }
+    body { font-family:var(--font); background:var(--bg); color:var(--t1); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1.5rem; }
+
+    .card {
+      width:100%; max-width:420px;
+      background:var(--card); border:1px solid var(--bdr); border-radius:16px;
+      padding:2.5rem; box-shadow:0 24px 64px rgba(0,0,0,0.6); position:relative; overflow:hidden;
+    }
+    .card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--pri),var(--acc)); }
+
+    .brand-row { display:flex; align-items:center; gap:12px; margin-bottom:2rem; }
+    .brand-icon { width:44px; height:44px; background:linear-gradient(135deg,var(--pri),#005ecb); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0; }
+    .brand-name { font-weight:800; font-size:1.1rem; letter-spacing:-0.02em; }
+    .brand-sub  { font-size:0.68rem; color:var(--t3); margin-top:2px; display:block; }
+
+    h2 { font-size:1.55rem; font-weight:800; letter-spacing:-0.025em; margin-bottom:0.3rem; }
+    .sub { font-size:0.83rem; color:var(--t3); margin-bottom:1.75rem; }
+
+    .alert { display:none; align-items:center; gap:0.6rem; border-radius:var(--r); padding:0.75rem 1rem; font-size:0.82rem; margin-bottom:1.2rem; }
+    .alert.show { display:flex; }
+    .a-err { background:rgba(255,59,48,0.07); border:1px solid rgba(255,59,48,0.22); border-left:3px solid #ff3b30; color:#ff6b62; }
+    .a-ok  { background:rgba(0,214,143,0.07); border:1px solid rgba(0,214,143,0.22); border-left:3px solid var(--acc); color:var(--acc); }
+
+    .fg { margin-bottom:1.1rem; }
+    label { display:block; font-size:0.7rem; font-weight:700; color:var(--t2); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.4rem; }
+    .iw { position:relative; }
+    .iico { position:absolute; left:0.9rem; top:50%; transform:translateY(-50%); font-size:0.9rem; opacity:0.35; pointer-events:none; }
+    input[type="email"], input[type="password"] {
+      width:100%; background:var(--panel); border:1px solid var(--bdr); border-radius:var(--r);
+      padding:0.72rem 0.9rem 0.72rem 2.5rem; color:var(--t1); font-family:var(--font); font-size:0.9rem; outline:none; transition:border-color .15s;
+    }
+    input:focus { border-color:var(--pri); box-shadow:0 0 0 3px rgba(10,132,255,0.12); }
+    input::placeholder { color:var(--t3); }
+    .eye { position:absolute; right:0.75rem; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--t3); cursor:pointer; font-size:0.9rem; }
+
+    .btn-login {
+      width:100%; padding:0.85rem;
+      background:linear-gradient(135deg,var(--pri),#005ecb);
+      color:#fff; border:none; border-radius:var(--r); font-family:var(--font);
+      font-weight:700; font-size:0.95rem; cursor:pointer; transition:all .18s;
+      margin-top:0.25rem; display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .btn-login:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 20px rgba(10,132,255,0.4); }
+    .btn-login:disabled { opacity:.55; cursor:not-allowed; }
+    .spin { width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .5s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .hr { display:flex; align-items:center; gap:1rem; color:var(--t3); font-size:0.7rem; margin:1.4rem 0; }
+    .hr::before,.hr::after { content:''; flex:1; height:1px; background:var(--bdr); }
+
+    .reg { text-align:center; font-size:0.83rem; color:var(--t3); margin-bottom:1.4rem; }
+    .reg a { color:var(--pri); text-decoration:none; font-weight:700; }
+
+    .demo { background:var(--panel); border:1px solid var(--bdr); border-radius:var(--r); padding:0.85rem 1rem; font-family:var(--mono); font-size:0.73rem; color:var(--t2); line-height:2.1; }
+    .demo .lbl { color:var(--t3); }
+    .demo .val { color:var(--acc); }
+    .demo .clk { color:var(--pri); cursor:pointer; text-decoration:underline dotted; }
+    .demo .hint { font-size:0.64rem; color:var(--t3); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand-row">
+      <div class="brand-icon">🏥</div>
+      <div>
+        <div class="brand-name">MedSecure</div>
+        <span class="brand-sub">Healthcare Security Platform</span>
+      </div>
+    </div>
+
+    <h2>Sign In</h2>
+    <p class="sub">Access your secure health portal</p>
+
+    <div class="alert a-err" id="errBox"><span>⚠</span><span id="errMsg"></span></div>
+    <div class="alert a-ok"  id="okBox"><span>✓</span><span id="okMsg"></span></div>
+
+    <div class="fg">
+      <label for="em">Email Address</label>
+      <div class="iw">
+        <span class="iico">✉</span>
+        <input type="email" id="em" placeholder="you@example.com" autocomplete="email">
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:1.4rem;">
+      <label for="pw">Password</label>
+      <div class="iw">
+        <span class="iico">🔑</span>
+        <input type="password" id="pw" placeholder="••••••••" autocomplete="current-password">
+        <button class="eye" type="button" onclick="togglePw()" id="eyeBtn">👁</button>
+      </div>
+    </div>
+
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">Sign In</button>
+
+    <div class="hr">OR</div>
+    <div class="reg">New patient? <a href="/register.html">Register here →</a></div>
+
+    <div class="demo">
+      <div><span class="lbl">Admin: </span><span class="clk" onclick="fillAdmin()">admin@healthcare.com</span></div>
+      <div><span class="lbl">Password: </span><span class="val">Admin@1234</span></div>
+      <div class="hint">↑ Click email to auto-fill</div>
+    </div>
+  </div>
+
+<script>
+  const DASH = { admin:'/admin_dashboard.html', doctor:'/doctor_dashboard.html', patient:'/patient_dashboard.html' };
+  try {
+    const t=localStorage.getItem('hcs_token'), u=localStorage.getItem('hcs_user');
+    if(t && u){ const p=JSON.parse(u); if(DASH[p.role]) window.location.replace(DASH[p.role]); }
+  } catch(_){}
+
+  function showErr(m){ document.getElementById('errMsg').textContent=m; document.getElementById('errBox').classList.add('show'); document.getElementById('okBox').classList.remove('show'); }
+  function showOk(m) { document.getElementById('okMsg').textContent=m;  document.getElementById('okBox').classList.add('show');  document.getElementById('errBox').classList.remove('show'); }
+  function clrAlerts(){ document.getElementById('errBox').classList.remove('show'); document.getElementById('okBox').classList.remove('show'); }
+  function setLoad(on){ const b=document.getElementById('loginBtn'); b.disabled=on; b.innerHTML=on?'<span class="spin"></span> Signing in…':'Sign In'; }
+  function togglePw(){ const i=document.getElementById('pw'),b=document.getElementById('eyeBtn'); i.type=i.type==='password'?'text':'password'; b.textContent=i.type==='password'?'👁':'🙈'; }
+  function fillAdmin(){ document.getElementById('em').value='admin@healthcare.com'; document.getElementById('pw').value='Admin@1234'; }
+
+  async function doLogin(){
+    const email=document.getElementById('em').value.trim(), pw=document.getElementById('pw').value;
+    clrAlerts();
+    if(!email){ showErr('Please enter your email.'); return; }
+    if(!pw)   { showErr('Please enter your password.'); return; }
+    setLoad(true);
+    try {
+      const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
+      const data=await res.json().catch(()=>({}));
+      if(res.ok && data.token && data.user){
+        localStorage.setItem('hcs_token',data.token);
+        localStorage.setItem('hcs_user',JSON.stringify(data.user));
+        showOk('Welcome, '+data.user.name+'! Redirecting…');
+        setTimeout(()=>{ window.location.replace(DASH[data.user.role]||'/login.html'); },400);
+      } else { setLoad(false); showErr(data.error||'Invalid email or password.'); }
+    } catch(e){ setLoad(false); showErr('Cannot reach server. Make sure Flask is running.'); }
+  }
+  document.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>

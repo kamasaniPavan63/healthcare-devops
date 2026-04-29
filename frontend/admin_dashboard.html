@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — MedSecure</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="dash-wrapper">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo" style="margin-bottom:0.5rem;">
+        <div class="logo-icon" style="width:32px;height:32px;font-size:1rem;">🏥</div>
+        <div class="brand-name">MedSecure</div>
+      
+      </div>
+      <span class="badge badge-admin" id="userRoleBadge">Admin</span>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;" id="sidebarUserName"></div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">Overview</div>
+      <button class="nav-link active" onclick="showSection('dashboard', this)">
+        <span class="nav-icon">📊</span> Dashboard
+      </button>
+
+      <div class="nav-section">Management</div>
+      <button class="nav-link" onclick="showSection('users', this)">
+        <span class="nav-icon">👥</span> All Users
+      </button>
+      <button class="nav-link" onclick="showSection('pending', this)">
+        <span class="nav-icon">⏳</span> Pending Approvals
+        <span id="pendingBadge" style="margin-left:auto;background:var(--danger);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:8px;display:none;"></span>
+      </button>
+      <button class="nav-link" onclick="showSection('records', this)">
+        <span class="nav-icon">📁</span> All Records
+      </button>
+      <button class="nav-link" onclick="showSection('create-doctor', this)">
+        <span class="nav-icon">👨‍⚕️</span> Create Doctor
+      </button>
+
+            <div class="nav-section">System</div>
+      <button class="nav-link" onclick="showSection('logs', this)">
+        <span class="nav-icon">📋</span> Activity Logs
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="nav-link" onclick="Auth.logout()">
+        <span class="nav-icon">🚪</span> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-content">
+    <header class="topbar">
+      <span class="topbar-title" id="pageTitle">Dashboard</span>
+      <div class="topbar-right">
+        <div class="user-chip">
+          <div class="user-avatar" id="avatarInitial">A</div>
+          <span id="topbarUserName">Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- ── Dashboard Section ───────────────────────── -->
+      <div class="section active" id="section-dashboard">
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card blue"><div class="stat-icon">👥</div><div class="stat-label">Total Users</div><div class="stat-value" id="stat-users">—</div></div>
+          <div class="stat-card green"><div class="stat-icon">🤒</div><div class="stat-label">Patients</div><div class="stat-value" id="stat-patients">—</div></div>
+          <div class="stat-card blue"><div class="stat-icon">👨‍⚕️</div><div class="stat-label">Doctors</div><div class="stat-value" id="stat-doctors">—</div></div>
+          <div class="stat-card orange"><div class="stat-icon">📁</div><div class="stat-label">Records</div><div class="stat-value" id="stat-records">—</div></div>
+          <div class="stat-card red"><div class="stat-icon">⏳</div><div class="stat-label">Pending</div><div class="stat-value" id="stat-pending">—</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recent Activity</span>
+            <button class="btn btn-outline btn-sm" onclick="loadDashboard()">↻ Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>User</th><th>Action</th><th>Time</th></tr></thead>
+              <tbody id="activityTable"><tr><td colspan="3" style="text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Users Section ───────────────────────────── -->
+      <div class="section" id="section-users">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">All Users</span>
+            <div style="display:flex;gap:0.5rem;">
+              <select class="form-select" id="roleFilter" style="width:auto;padding:0.4rem 0.75rem;font-size:0.8rem;" onchange="loadUsers()">
+                <option value="">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="doctor">Doctor</option>
+                <option value="patient">Patient</option>
+              </select>
+              <button class="btn btn-outline btn-sm" onclick="loadUsers()">↻ Refresh</button>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+              <tbody id="usersTable"><tr><td colspan="6" style="text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Pending Approvals ───────────────────────── -->
+      <div class="section" id="section-pending">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">⏳ Pending Approvals</span>
+            <button class="btn btn-outline btn-sm" onclick="loadPending()">↻ Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Registered</th><th>Actions</th></tr></thead>
+              <tbody id="pendingTable"><tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── All Records ─────────────────────────────── -->
+      <div class="section" id="section-records">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">All Medical Records</span>
+            <button class="btn btn-outline btn-sm" onclick="loadRecords()">↻ Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>ID</th><th>Type</th><th>Patient</th><th>Hash (SHA-256)</th><th>Created</th><th>Actions</th></tr></thead>
+              <tbody id="recordsTable"><tr><td colspan="6" style="text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Create Doctor ───────────────────────────── -->
+      <div class="section" id="section-create-doctor">
+        <div style="max-width:560px;">
+          <div class="card">
+            <div class="card-header"><span class="card-title">👨‍⚕️ Create Doctor Account</span></div>
+            <div class="card-body">
+              <div id="doctorFormMsg"></div>
+              <form id="createDoctorForm">
+                <div class="grid-2">
+                  <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-control" id="doc_name" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="doc_email" required>
+                  </div>
+                </div>
+                <div class="grid-2">
+                  <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-control" id="doc_password" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Specialization</label>
+                    <input type="text" class="form-control" id="doc_spec" placeholder="Cardiology" required>
+                  </div>
+                </div>
+                <div class="grid-2">
+                  <div class="form-group">
+                    <label class="form-label">License Number</label>
+                    <input type="text" class="form-control" id="doc_license" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Hospital</label>
+                    <input type="text" class="form-control" id="doc_hospital">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Experience (years)</label>
+                  <input type="number" class="form-control" id="doc_exp" min="0" value="0" style="max-width:150px;">
+                </div>
+                <button type="submit" class="btn btn-primary" id="createDoctorBtn">Create Doctor Account</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Activity Logs ───────────────────────────── -->
+      <div class="section" id="section-logs">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📋 Activity Logs</span>
+            <button class="btn btn-outline btn-sm" onclick="loadLogs()">↻ Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>User</th><th>Action</th><th>Resource</th><th>IP</th><th>Time</th></tr></thead>
+              <tbody id="logsTable"><tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+  // Auth guard
+  if (!Auth.requireLogin('admin')) {}
+
+  const user = Auth.getUser();
+  if (user) {
+    document.getElementById('sidebarUserName').textContent = user.name;
+    document.getElementById('topbarUserName').textContent  = user.name;
+    document.getElementById('avatarInitial').textContent   = user.name[0].toUpperCase();
+  }
+
+  function showSection(name, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('active');
+    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('pageTitle').textContent = el.textContent.trim().replace(/^\S+\s/, '');
+
+    const loaders = { dashboard: loadDashboard, users: loadUsers, pending: loadPending, records: loadRecords, logs: loadLogs };
+    if (loaders[name]) loaders[name]();
+  }
+
+  // ── Dashboard ──────────────────────────────────────
+  async function loadDashboard() {
+    const res = await Http.get('/admin/dashboard');
+    if (!res.ok) return;
+    const { stats, recent_activity } = res.data;
+    document.getElementById('stat-users').textContent    = stats.total_users;
+    document.getElementById('stat-patients').textContent = stats.total_patients;
+    document.getElementById('stat-doctors').textContent  = stats.total_doctors;
+    document.getElementById('stat-records').textContent  = stats.total_records;
+    document.getElementById('stat-pending').textContent  = stats.pending_approvals;
+
+    if (stats.pending_approvals > 0) {
+      const pb = document.getElementById('pendingBadge');
+      pb.textContent = stats.pending_approvals;
+      pb.style.display = 'inline';
+    }
+
+    document.getElementById('activityTable').innerHTML = recent_activity.length
+      ? recent_activity.map(l => `
+          <tr>
+            <td class="text-primary-val">${l.user_name}</td>
+            <td>${l.action}</td>
+            <td style="color:var(--text-muted);font-size:0.8rem;">${UI.formatDate(l.timestamp)}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">No activity yet</td></tr>';
+  }
+
+  // ── Users ──────────────────────────────────────────
+  async function loadUsers() {
+    const role = document.getElementById('roleFilter')?.value || '';
+    const res  = await Http.get(`/admin/users${role ? '?role=' + role : ''}`);
+    if (!res.ok) return;
+    document.getElementById('usersTable').innerHTML = res.data.users.length
+      ? res.data.users.map(u => `
+          <tr>
+            <td class="text-primary-val">${u.name}</td>
+            <td style="color:var(--text-muted)">${u.email}</td>
+            <td>${UI.badge(u.role, u.role)}</td>
+            <td>${UI.badge(u.status, u.status)}</td>
+            <td style="color:var(--text-muted);font-size:0.8rem;">${UI.formatDate(u.created_at)}</td>
+            <td>
+              ${u.status === 'pending' ? `<button class="btn btn-accent btn-sm" onclick="approveUser(${u.id})">Approve</button> ` : ''}
+              ${u.status === 'active' && u.role !== 'admin' ? `<button class="btn btn-outline btn-sm" onclick="suspendUser(${u.id})">Suspend</button> ` : ''}
+              ${u.role !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id}, '${u.name}')">Delete</button>` : ''}
+            </td>
+          </tr>`).join('')
+      : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">No users found</td></tr>';
+  }
+
+  // ── Pending ────────────────────────────────────────
+  async function loadPending() {
+    const res = await Http.get('/admin/users?status=pending');
+    if (!res.ok) return;
+    document.getElementById('pendingTable').innerHTML = res.data.users.length
+      ? res.data.users.map(u => `
+          <tr>
+            <td class="text-primary-val">${u.name}</td>
+            <td style="color:var(--text-muted)">${u.email}</td>
+            <td>${UI.badge(u.role, u.role)}</td>
+            <td style="color:var(--text-muted);font-size:0.8rem;">${UI.formatDate(u.created_at)}</td>
+            <td>
+              <button class="btn btn-accent btn-sm" onclick="approveUser(${u.id})">✓ Approve</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id}, '${u.name}')">✕ Reject</button>
+            </td>
+          </tr>`).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">No pending approvals 🎉</td></tr>';
+  }
+
+  // ── Records ────────────────────────────────────────
+  async function loadRecords() {
+    const res = await Http.get('/admin/records');
+    if (!res.ok) return;
+    document.getElementById('recordsTable').innerHTML = res.data.records.length
+      ? res.data.records.map(r => `
+          <tr>
+            <td style="font-family:var(--font-mono);color:var(--text-muted)">#${r.report_id}</td>
+            <td>${UI.badge(r.report_type, r.report_type)}</td>
+            <td>Patient #${r.patient_id}</td>
+            <td style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted)">${r.hash_value.substring(0,20)}…</td>
+            <td style="color:var(--text-muted);font-size:0.8rem;">${UI.formatDate(r.created_at)}</td>
+            <td style="display:flex;gap:6px;">
+  <button class="btn btn-primary btn-sm" onclick="viewRecord(${r.report_id})">🔓 Decrypt & View</button>
+  <button class="btn btn-danger btn-sm" onclick="deleteRecord(${r.report_id})">Delete</button>
+</td>
+          </tr>`).join('')
+      : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">No records</td></tr>';
+  }
+
+  // ── Logs ───────────────────────────────────────────
+  async function loadLogs() {
+    const res = await Http.get('/admin/logs?per_page=50');
+    if (!res.ok) return;
+    document.getElementById('logsTable').innerHTML = res.data.logs.length
+      ? res.data.logs.map(l => `
+          <tr>
+            <td class="text-primary-val">${l.user_name}</td>
+            <td>${l.action}</td>
+            <td style="color:var(--text-muted)">${l.resource || '—'}</td>
+            <td style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-muted)">${l.ip_address || '—'}</td>
+            <td style="color:var(--text-muted);font-size:0.8rem;">${UI.formatDate(l.timestamp)}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">No logs</td></tr>';
+  }
+
+  // ── Actions ────────────────────────────────────────
+  async function approveUser(id) {
+    const res = await Http.post(`/admin/users/${id}/approve`);
+    Toast.show(res.ok ? 'User approved' : res.data.error, res.ok ? 'success' : 'error');
+    if (res.ok) { loadPending(); loadUsers(); loadDashboard(); }
+  }
+
+  async function suspendUser(id) {
+    if (!confirm('Suspend this user?')) return;
+    const res = await Http.post(`/admin/users/${id}/suspend`);
+    Toast.show(res.ok ? 'User suspended' : res.data.error, res.ok ? 'success' : 'error');
+    if (res.ok) loadUsers();
+  }
+
+  async function deleteUser(id, name) {
+    if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+    const res = await Http.delete(`/admin/users/${id}`);
+    Toast.show(res.ok ? 'User deleted' : res.data.error, res.ok ? 'success' : 'error');
+    if (res.ok) { loadUsers(); loadDashboard(); }
+  }
+
+  async function deleteRecord(id) {
+  if (!confirm('Delete this medical record permanently?')) return;
+
+  const res = await Http.delete(`/medical/delete_report/${id}`);
+
+  Toast.show(
+    res.ok ? 'Record deleted successfully' : res.data?.error || 'Delete failed',
+    res.ok ? 'success' : 'error'
+  );
+
+  if (res.ok) loadRecords();
+}
+
+  // ── Create Doctor ──────────────────────────────────
+  document.getElementById('createDoctorForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('createDoctorBtn');
+    UI.loading(btn, true);
+    const res = await Http.post('/admin/create-doctor', {
+      name:             document.getElementById('doc_name').value,
+      email:            document.getElementById('doc_email').value,
+      password:         document.getElementById('doc_password').value,
+      specialization:   document.getElementById('doc_spec').value,
+      license_number:   document.getElementById('doc_license').value,
+      hospital:         document.getElementById('doc_hospital').value,
+      experience_years: parseInt(document.getElementById('doc_exp').value) || 0
+    });
+    UI.loading(btn, false);
+    const msg = document.getElementById('doctorFormMsg');
+    if (res.ok) {
+      msg.innerHTML = '<div class="alert alert-success">✓ Doctor account created successfully</div>';
+      document.getElementById('createDoctorForm').reset();
+    } else {
+      msg.innerHTML = `<div class="alert alert-danger">✕ ${res.data.error}</div>`;
+    }
+  });
+  async function viewRecord(id) {
+  const res = await Http.get(`/doctor/records/${id}/decrypt`);
+  let overlay = document.getElementById('decryptOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'decryptOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem;';
+    overlay.onclick = e => { if(e.target===overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
+  }
+  if (res.ok) {
+    const d = res.data;
+    const dataHtml = Object.entries(d.data||{}).map(([k,v])=>{
+      if(v===''||v===null||v===undefined) return '';
+      if(typeof v==='object') return Object.entries(v).map(([k2,v2])=>v2?`<div><span class="label">${k2.replace(/_/g,' ')}:</span><span class="value">${v2}</span></div>`:'').join('');
+      return `<div><span class="label">${k.replace(/_/g,' ')}:</span><span class="value">${v}</span></div>`;
+    }).filter(Boolean).join('');
+    overlay.innerHTML = `
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:2rem;width:100%;max-width:640px;max-height:80vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3 style="margin:0;color:var(--text-primary);">🔓 Decrypted Record #${id}</h3>
+          <button onclick="document.getElementById('decryptOverlay').remove()" style="background:none;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer;">✕</button>
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+          ${UI.badge(d.report_type, d.report_type)}
+          <span class="badge ${d.integrity_check?'badge-active':'badge-suspended'}">${d.integrity_check?'✓ Hash OK':'✕ Hash Fail'}</span>
+          <span class="badge ${d.signature_valid?'badge-active':'badge-pending'}">${d.signature_valid?'✓ Sig Valid':'⚠ Unverified'}</span>
+        </div>
+        <div class="crypto-info">${dataHtml||'<span style="color:var(--text-muted)">No data</span>'}</div>
+      </div>`;
+  } else {
+    overlay.innerHTML = `<div style="background:var(--bg-card);border-radius:12px;padding:2rem;color:var(--danger);">✕ ${res.data?.error||'Decryption failed'}</div>`;
+  }
+}
+
+  // Init
+  loadDashboard();
+</script>
+</body>
+</html>

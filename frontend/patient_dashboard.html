@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Dashboard — MedSecure</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .report-panel { display: none; }
+    .report-panel.show { display: block; animation: fadeIn 0.2s ease; }
+    .field-group-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--primary);
+      padding: 0.6rem 0 0.4rem; border-top: 1px solid var(--border);
+      margin-top: 0.75rem; margin-bottom: 0.25rem;
+    }
+    .field-group-title:first-child { border-top: none; margin-top: 0; }
+    .report-type-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(148px,1fr));
+      gap: 0.6rem; margin-bottom: 1.25rem;
+    }
+    .rtype-btn {
+      background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.75rem 0.6rem;
+      cursor: pointer; text-align: center; transition: var(--transition);
+      font-family: var(--font-body);
+    }
+    .rtype-btn:hover  { border-color: var(--primary); background: rgba(10,132,255,0.07); }
+    .rtype-btn.selected { border-color: var(--primary); background: rgba(10,132,255,0.14); }
+    .rtype-btn .ri { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+    .rtype-btn .rl { font-size: 0.78rem; font-weight: 600; color: var(--text-primary); }
+    .rtype-btn .rs { font-size: 0.66rem; color: var(--text-muted); margin-top: 2px; }
+    .ref-range { font-size: 0.7rem; color: var(--accent); margin-top: 2px; }
+    .input-with-unit { display: flex; gap: 0.5rem; align-items: center; }
+    .input-with-unit .form-control { flex: 1; }
+    .unit-tag {
+      background: var(--bg-dark); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.5rem 0.75rem;
+      font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono); white-space: nowrap;
+    }
+    .crypto-step { display:flex; align-items:flex-start; gap:0.75rem; padding:0.6rem 0; border-bottom:1px solid var(--border); font-size:0.82rem; }
+    .crypto-step:last-child { border-bottom:none; }
+    .step-num { width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;flex-shrink:0;margin-top:1px; }
+    .step-text { color:var(--text-secondary); }
+    .step-text strong { color:var(--accent); font-family:var(--font-mono); }
+    .sev-row { display:flex; gap:0.5rem; flex-wrap:wrap; }
+    .sev-btn { padding:4px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-panel);font-size:0.75rem;font-weight:600;cursor:pointer;font-family:var(--font-body);color:var(--text-secondary);transition:var(--transition); }
+    .sev-btn.sel-mild     { border-color:var(--accent);   background:rgba(0,214,143,0.12); color:var(--accent);   }
+    .sev-btn.sel-moderate { border-color:var(--warning);  background:rgba(255,149,0,0.12); color:var(--warning);  }
+    .sev-btn.sel-severe   { border-color:var(--danger);   background:rgba(255,59,48,0.12); color:var(--danger);   }
+  </style>
+</head>
+<body>
+<div class="dash-wrapper">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo" style="margin-bottom:0.5rem;">
+        <div class="logo-icon" style="width:32px;height:32px;font-size:1rem;">🏥</div>
+        <div class="brand-name">MedSecure</div>
+      </div>
+      <span class="badge badge-patient">Patient</span>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;" id="sidebarUserName"></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Overview</div>
+      <button class="nav-link active" onclick="showSection('dashboard',this)"><span class="nav-icon">📊</span> Dashboard</button>
+      <div class="nav-section">Health Records</div>
+      <button class="nav-link" onclick="showSection('records',this)"><span class="nav-icon">📁</span> My Records</button>
+      <button class="nav-link" onclick="showSection('upload',this)"><span class="nav-icon">📤</span> Upload Report</button>
+            <div class="nav-section">Account</div>
+      <button class="nav-link" onclick="showSection('profile',this)"><span class="nav-icon">👤</span> My Profile</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="nav-link" onclick="Auth.logout()"><span class="nav-icon">🚪</span> Sign Out</button>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <span class="topbar-title" id="pageTitle">Dashboard</span>
+      <div class="topbar-right">
+        <div class="user-chip">
+          <div class="user-avatar" id="avatarInitial" style="background:linear-gradient(135deg,var(--accent),#00A878)">P</div>
+          <span id="topbarUserName">Patient</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- DASHBOARD -->
+      <div class="section active" id="section-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card green"><div class="stat-icon">📁</div><div class="stat-label">My Records</div><div class="stat-value" id="stat-records">—</div></div>
+          <div class="stat-card blue"><div class="stat-icon">🔐</div><div class="stat-label">Encryption</div><div class="stat-value" style="font-size:1rem;color:var(--accent)">AES-256</div></div>
+          <div class="stat-card orange"><div class="stat-icon">✍️</div><div class="stat-label">Signatures</div><div class="stat-value" style="font-size:1rem;color:var(--warning)">ECDSA</div></div>
+          <div class="stat-card blue"><div class="stat-icon">🔍</div><div class="stat-label">Integrity</div><div class="stat-value" style="font-size:1rem;color:var(--info)">SHA-256</div></div>
+        </div>
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div class="card-header"><span class="card-title">Recent Records</span><button class="btn btn-outline btn-sm" onclick="loadDashboard()">↻ Refresh</button></div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Type</th><th>Shared With</th><th>Hash (SHA-256)</th><th>Created</th><th>Action</th></tr></thead>
+              <tbody id="recentTable"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">🛡️ How Your Records Are Protected</span></div>
+          <div class="card-body">
+            <div class="crypto-step"><div class="step-num">1</div><div class="step-text">Data encrypted with <strong>AES-256-GCM</strong> — a unique random 256-bit key per record</div></div>
+            <div class="crypto-step"><div class="step-num">2</div><div class="step-text">Key exchanged via <strong>ECDH SECP384R1</strong> — only you &amp; authorised doctors can derive it</div></div>
+            <div class="crypto-step"><div class="step-num">3</div><div class="step-text"><strong>SHA-256</strong> fingerprint computed — any tampering immediately invalidates the hash</div></div>
+            <div class="crypto-step"><div class="step-num">4</div><div class="step-text">Hash signed with <strong>ECDSA SECP256K1</strong> — cryptographically proves who created the record</div></div>
+            <div class="crypto-step"><div class="step-num">5</div><div class="step-text">Only the encrypted blob is stored — your plaintext never hits the database</div></div>
+          </div>
+        </div>
+        
+      </div>
+
+      <!-- MY RECORDS -->
+      <div class="section" id="section-records">
+        <div class="card">
+          <div class="card-header"><span class="card-title">My Medical Records</span><button class="btn btn-outline btn-sm" onclick="loadRecords()">↻ Refresh</button></div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>ID</th><th>Report Type</th><th>Shared With</th><th>Hash (SHA-256)</th><th>Created</th><th>Action</th></tr></thead>
+              <tbody id="recordsTable"><tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- UPLOAD REPORT -->
+      <div class="section" id="section-upload">
+        <div style="max-width:780px;">
+
+          <!-- Step 1 -->
+          <div class="card" style="margin-bottom:1rem;">
+            <div class="card-header"><span class="card-title">📤 Upload Medical Report — Step 1: Choose Report Type</span></div>
+            <div class="card-body">
+              <div class="report-type-grid">
+                <button type="button" class="rtype-btn" onclick="selectType('vital_signs',this)"><span class="ri">❤️</span><span class="rl">Vital Signs</span><span class="rs">BP, Pulse, Temp, SpO₂</span></button>
+                <button type="button" class="rtype-btn" onclick="selectType('blood_test',this)"><span class="ri">🩸</span><span class="rl">Blood Test</span><span class="rs">CBC, Lipids, Metabolic</span></button>
+                <button type="button" class="rtype-btn" onclick="selectType('urine_test',this)"><span class="ri">🧪</span><span class="rl">Urine Test</span><span class="rs">Urinalysis, Microscopy</span></button>
+                <button type="button" class="rtype-btn" onclick="selectType('imaging',this)"><span class="ri">🔬</span><span class="rl">Imaging / Scan</span><span class="rs">X-Ray, MRI, CT, USG</span></button>
+                <button type="button" class="rtype-btn" onclick="selectType('ecg',this)"><span class="ri">📈</span><span class="rl">ECG / EKG</span><span class="rs">Heart Rhythm Report</span></button>
+                <button type="button" class="rtype-btn" onclick="selectType('prescription',this)"><span class="ri">💊</span><span class="rl">Prescription</span><span class="rs">Medications &amp; Dosage</span></button>
+                <button type="button" class="rtype-btn" onclick="selectType('vaccination',this)"><span class="ri">💉</span><span class="rl">Vaccination</span><span class="rs">Immunisation Record</span></button>
+                <button type="button" class="rtype-btn" onclick="selectType('surgery',this)"><span class="ri">🏥</span><span class="rl">Surgery / Op</span><span class="rs">Operation Notes</span></button>
+                <button type="button" class="rtype-btn" onclick="selectType('allergy',this)"><span class="ri">⚠️</span><span class="rl">Allergy Test</span><span class="rs">Allergen Results</span></button>
+                <button type="button" class="rtype-btn" onclick="selectType('diabetes',this)"><span class="ri">🍬</span><span class="rl">Diabetes Panel</span><span class="rs">HbA1c, Insulin, eGFR</span></button>
+                <button type="button" class="rtype-btn" onclick="selectType('thyroid',this)"><span class="ri">🦋</span><span class="rl">Thyroid Panel</span><span class="rs">TSH, T3, T4, Anti-TPO</span></button>
+                <button type="button" class="rtype-btn" onclick="selectType('other',this)"><span class="ri">📝</span><span class="rl">Other / Custom</span><span class="rs">Name it yourself</span></button>
+              </div>
+              <div id="selectedTypeDisplay" style="display:none;padding:0.6rem 1rem;background:rgba(10,132,255,0.08);border:1px solid rgba(10,132,255,0.2);border-radius:var(--radius);font-size:0.85rem;color:var(--primary);">
+                ✓ Selected: <strong id="selectedTypeLabel"></strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="card" id="formCard" style="display:none;margin-bottom:1rem;">
+            <div class="card-header">
+              <span class="card-title">✏️ Step 2: Fill Report Details</span>
+              <div style="display:flex;align-items:center;gap:0.5rem;">
+                <span style="font-size:0.78rem;color:var(--text-muted);">Share with:</span>
+                <select class="form-select" id="upload_doctor" style="width:auto;padding:0.35rem 0.75rem;font-size:0.8rem;">
+                  <option value="">None (Private)</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="uploadMsg" style="margin-bottom:0.75rem;"></div>
+
+              <!-- VITAL SIGNS -->
+              <div class="report-panel" id="panel-vital_signs">
+                <div class="field-group-title">🫀 Cardiovascular</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Systolic Blood Pressure</label><div class="input-with-unit"><input type="number" class="form-control" id="vs_bp_sys" placeholder="120" min="60" max="250"><span class="unit-tag">mmHg</span></div><div class="ref-range">Normal: 90–120 mmHg</div></div>
+                  <div class="form-group"><label class="form-label">Diastolic Blood Pressure</label><div class="input-with-unit"><input type="number" class="form-control" id="vs_bp_dia" placeholder="80" min="40" max="150"><span class="unit-tag">mmHg</span></div><div class="ref-range">Normal: 60–80 mmHg</div></div>
+                  <div class="form-group"><label class="form-label">Heart Rate (Pulse)</label><div class="input-with-unit"><input type="number" class="form-control" id="vs_hr" placeholder="72" min="30" max="220"><span class="unit-tag">bpm</span></div><div class="ref-range">Normal: 60–100 bpm</div></div>
+                  <div class="form-group"><label class="form-label">SpO₂ (Oxygen Saturation)</label><div class="input-with-unit"><input type="number" class="form-control" id="vs_spo2" placeholder="98" min="80" max="100" step="0.1"><span class="unit-tag">%</span></div><div class="ref-range">Normal: 95–100%</div></div>
+                </div>
+                <div class="field-group-title">🌡️ Temperature &amp; Respiration</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Body Temperature</label><div class="input-with-unit"><input type="number" class="form-control" id="vs_temp" placeholder="36.8" step="0.1" min="30" max="45"><span class="unit-tag">°C</span></div><div class="ref-range">Normal: 36.1–37.2 °C</div></div>
+                  <div class="form-group"><label class="form-label">Respiratory Rate</label><div class="input-with-unit"><input type="number" class="form-control" id="vs_rr" placeholder="16" min="8" max="40"><span class="unit-tag">br/min</span></div><div class="ref-range">Normal: 12–20 breaths/min</div></div>
+                  <div class="form-group"><label class="form-label">Height</label><div class="input-with-unit"><input type="number" class="form-control" id="vs_height" placeholder="170" min="50" max="250"><span class="unit-tag">cm</span></div></div>
+                  <div class="form-group"><label class="form-label">Weight</label><div class="input-with-unit"><input type="number" class="form-control" id="vs_weight" placeholder="70" step="0.1" min="2" max="300"><span class="unit-tag">kg</span></div></div>
+                </div>
+                <div class="form-group"><label class="form-label">BMI</label><div class="input-with-unit" style="max-width:220px;"><input type="number" class="form-control" id="vs_bmi" placeholder="24.2" step="0.1"><span class="unit-tag">kg/m²</span></div><div class="ref-range">Normal: 18.5–24.9 kg/m²</div></div>
+                <div class="form-group"><label class="form-label">Clinical Notes</label><textarea class="form-control" id="vs_notes" rows="2" placeholder="e.g. Patient appears well, no distress observed..."></textarea></div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Recorded By</label><input type="text" class="form-control" id="vs_clinician" placeholder="Dr. / Nurse name"></div>
+                  <div class="form-group"><label class="form-label">Date &amp; Time</label><input type="datetime-local" class="form-control" id="vs_datetime"></div>
+                </div>
+              </div>
+
+              <!-- BLOOD TEST -->
+              <div class="report-panel" id="panel-blood_test">
+                <div class="field-group-title">🔴 Complete Blood Count (CBC)</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Hemoglobin</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_hgb" placeholder="14.5" step="0.1"><span class="unit-tag">g/dL</span></div><div class="ref-range">M: 13.5–17.5 | F: 12.0–15.5</div></div>
+                  <div class="form-group"><label class="form-label">Hematocrit (PCV)</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_hct" placeholder="42" step="0.1"><span class="unit-tag">%</span></div><div class="ref-range">M: 41–53% | F: 36–46%</div></div>
+                  <div class="form-group"><label class="form-label">RBC Count</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_rbc" placeholder="4.8" step="0.01"><span class="unit-tag">M/µL</span></div><div class="ref-range">M: 4.7–6.1 | F: 4.2–5.4</div></div>
+                  <div class="form-group"><label class="form-label">WBC Count</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_wbc" placeholder="7.2" step="0.1"><span class="unit-tag">K/µL</span></div><div class="ref-range">Normal: 4.5–11.0 K/µL</div></div>
+                  <div class="form-group"><label class="form-label">Platelet Count</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_plt" placeholder="250"><span class="unit-tag">K/µL</span></div><div class="ref-range">Normal: 150–400 K/µL</div></div>
+                  <div class="form-group"><label class="form-label">MCV</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_mcv" placeholder="88" step="0.1"><span class="unit-tag">fL</span></div><div class="ref-range">Normal: 80–100 fL</div></div>
+                </div>
+                <div class="field-group-title">🩺 Metabolic &amp; Liver Panel</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Fasting Glucose</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_glucose" placeholder="95" step="0.1"><span class="unit-tag">mg/dL</span></div><div class="ref-range">Normal: 70–100 mg/dL</div></div>
+                  <div class="form-group"><label class="form-label">Total Cholesterol</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_chol" placeholder="185" step="0.1"><span class="unit-tag">mg/dL</span></div><div class="ref-range">Desirable: &lt;200 mg/dL</div></div>
+                  <div class="form-group"><label class="form-label">HDL (Good)</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_hdl" placeholder="55" step="0.1"><span class="unit-tag">mg/dL</span></div><div class="ref-range">M:&gt;40 | F:&gt;50 mg/dL</div></div>
+                  <div class="form-group"><label class="form-label">LDL (Bad)</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_ldl" placeholder="110" step="0.1"><span class="unit-tag">mg/dL</span></div><div class="ref-range">Optimal: &lt;100 mg/dL</div></div>
+                  <div class="form-group"><label class="form-label">Triglycerides</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_trig" placeholder="130" step="0.1"><span class="unit-tag">mg/dL</span></div><div class="ref-range">Normal: &lt;150 mg/dL</div></div>
+                  <div class="form-group"><label class="form-label">Creatinine</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_creat" placeholder="0.9" step="0.01"><span class="unit-tag">mg/dL</span></div><div class="ref-range">M: 0.7–1.3 | F: 0.6–1.1</div></div>
+                  <div class="form-group"><label class="form-label">BUN</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_bun" placeholder="14" step="0.1"><span class="unit-tag">mg/dL</span></div><div class="ref-range">Normal: 7–20 mg/dL</div></div>
+                  <div class="form-group"><label class="form-label">Sodium (Na⁺)</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_na" placeholder="140"><span class="unit-tag">mEq/L</span></div><div class="ref-range">Normal: 136–145</div></div>
+                  <div class="form-group"><label class="form-label">Potassium (K⁺)</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_k" placeholder="4.2" step="0.1"><span class="unit-tag">mEq/L</span></div><div class="ref-range">Normal: 3.5–5.0</div></div>
+                  <div class="form-group"><label class="form-label">ALT (Liver)</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_alt" placeholder="28"><span class="unit-tag">U/L</span></div><div class="ref-range">Normal: 7–56 U/L</div></div>
+                  <div class="form-group"><label class="form-label">AST (Liver)</label><div class="input-with-unit"><input type="number" class="form-control" id="bt_ast" placeholder="25"><span class="unit-tag">U/L</span></div><div class="ref-range">Normal: 10–40 U/L</div></div>
+                </div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Lab / Testing Facility</label><input type="text" class="form-control" id="bt_lab" placeholder="e.g. Apollo Diagnostics"></div>
+                  <div class="form-group"><label class="form-label">Sample Collection Date</label><input type="date" class="form-control" id="bt_date"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Additional Notes</label><textarea class="form-control" id="bt_notes" rows="2" placeholder="Fasting duration, special instructions…"></textarea></div>
+              </div>
+
+              <!-- URINE TEST -->
+              <div class="report-panel" id="panel-urine_test">
+                <div class="field-group-title">🧪 Physical Examination</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Colour</label><select class="form-select" id="ut_colour"><option value="">Select</option><option>Pale Yellow</option><option>Yellow</option><option>Dark Yellow</option><option>Amber</option><option>Brown</option><option>Red/Pink</option><option>Clear</option></select></div>
+                  <div class="form-group"><label class="form-label">Appearance</label><select class="form-select" id="ut_appear"><option value="">Select</option><option>Clear</option><option>Slightly Turbid</option><option>Turbid</option><option>Cloudy</option></select></div>
+                  <div class="form-group"><label class="form-label">pH</label><div class="input-with-unit"><input type="number" class="form-control" id="ut_ph" placeholder="6.0" step="0.1" min="4.5" max="8.5"><span class="unit-tag">pH</span></div><div class="ref-range">Normal: 4.5–8.0</div></div>
+                  <div class="form-group"><label class="form-label">Specific Gravity</label><input type="number" class="form-control" id="ut_sg" placeholder="1.015" step="0.001" min="1.000" max="1.035"><div class="ref-range">Normal: 1.005–1.030</div></div>
+                </div>
+                <div class="field-group-title">🔬 Biochemical Dipstick</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Protein</label><select class="form-select" id="ut_protein"><option value="">Select</option><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option></select><div class="ref-range">Normal: Negative</div></div>
+                  <div class="form-group"><label class="form-label">Glucose</label><select class="form-select" id="ut_glucose"><option value="">Select</option><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option></select><div class="ref-range">Normal: Negative</div></div>
+                  <div class="form-group"><label class="form-label">Ketones</label><select class="form-select" id="ut_ketones"><option value="">Select</option><option>Negative</option><option>Trace</option><option>Small</option><option>Moderate</option><option>Large</option></select></div>
+                  <div class="form-group"><label class="form-label">Blood</label><select class="form-select" id="ut_blood"><option value="">Select</option><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option></select></div>
+                  <div class="form-group"><label class="form-label">Leukocyte Esterase</label><select class="form-select" id="ut_le"><option value="">Select</option><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option></select></div>
+                  <div class="form-group"><label class="form-label">Nitrites</label><select class="form-select" id="ut_nitrites"><option value="">Select</option><option>Negative</option><option>Positive</option></select></div>
+                </div>
+                <div class="field-group-title">🔭 Microscopy</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">RBC /HPF</label><input type="text" class="form-control" id="ut_rbc" placeholder="0–2"><div class="ref-range">Normal: 0–2 /HPF</div></div>
+                  <div class="form-group"><label class="form-label">WBC / Pus Cells /HPF</label><input type="text" class="form-control" id="ut_wbc" placeholder="0–5"><div class="ref-range">Normal: 0–5 /HPF</div></div>
+                  <div class="form-group"><label class="form-label">Epithelial Cells</label><input type="text" class="form-control" id="ut_epi" placeholder="Few / Moderate / Many"></div>
+                  <div class="form-group"><label class="form-label">Casts</label><input type="text" class="form-control" id="ut_casts" placeholder="None / Hyaline / Granular"></div>
+                  <div class="form-group"><label class="form-label">Crystals</label><input type="text" class="form-control" id="ut_crystals" placeholder="None / Uric Acid / Calcium Oxalate"></div>
+                  <div class="form-group"><label class="form-label">Bacteria</label><select class="form-select" id="ut_bacteria"><option value="">Select</option><option>None</option><option>Few</option><option>Moderate</option><option>Many</option></select></div>
+                </div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Test Date</label><input type="date" class="form-control" id="ut_date"></div>
+                  <div class="form-group"><label class="form-label">Lab Notes</label><textarea class="form-control" id="ut_notes" rows="2" placeholder="Additional findings…"></textarea></div>
+                </div>
+              </div>
+
+              <!-- IMAGING -->
+              <div class="report-panel" id="panel-imaging">
+                <div class="field-group-title">📡 Scan Details</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Imaging Modality</label><select class="form-select" id="img_type"><option value="">Select</option><option>X-Ray (Radiograph)</option><option>CT Scan</option><option>MRI</option><option>Ultrasound (USG)</option><option>PET Scan</option><option>Mammography</option><option>DEXA Scan</option><option>Fluoroscopy</option><option>Angiography</option></select></div>
+                  <div class="form-group"><label class="form-label">Body Region / Part</label><input type="text" class="form-control" id="img_part" placeholder="e.g. Chest, Brain, Abdomen, Right Knee"></div>
+                  <div class="form-group"><label class="form-label">Laterality</label><select class="form-select" id="img_side"><option value="">N/A</option><option>Left</option><option>Right</option><option>Bilateral</option><option>Midline</option></select></div>
+                  <div class="form-group"><label class="form-label">Views / Projections</label><input type="text" class="form-control" id="img_views" placeholder="e.g. PA + Lateral, AP"></div>
+                  <div class="form-group"><label class="form-label">Contrast Used</label><select class="form-select" id="img_contrast"><option value="No">No Contrast</option><option value="IV">Yes — IV Contrast</option><option value="Oral">Yes — Oral</option><option value="Both">Yes — Both</option></select></div>
+                  <div class="form-group"><label class="form-label">Scan Date</label><input type="date" class="form-control" id="img_date"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Radiological Findings</label><textarea class="form-control" id="img_findings" rows="3" placeholder="Describe findings e.g. 'No acute cardiopulmonary process. Heart size normal. Lungs clear bilaterally.'"></textarea></div>
+                <div class="form-group"><label class="form-label">Impression / Diagnosis</label><textarea class="form-control" id="img_impression" rows="2" placeholder="e.g. Normal chest X-ray / Moderate left pleural effusion"></textarea></div>
+                <div class="form-group"><label class="form-label">Recommendations</label><textarea class="form-control" id="img_rec" rows="2" placeholder="e.g. Correlate clinically. Follow-up CT in 3 months."></textarea></div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Radiologist Name</label><input type="text" class="form-control" id="img_radiologist" placeholder="Dr. Name — MD Radiology"></div>
+                  <div class="form-group"><label class="form-label">Imaging Centre</label><input type="text" class="form-control" id="img_centre" placeholder="e.g. Apollo Imaging Centre"></div>
+                </div>
+              </div>
+
+              <!-- ECG -->
+              <div class="report-panel" id="panel-ecg">
+                <div class="field-group-title">📈 ECG Parameters</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Heart Rate</label><div class="input-with-unit"><input type="number" class="form-control" id="ecg_hr" placeholder="75"><span class="unit-tag">bpm</span></div><div class="ref-range">Normal: 60–100 bpm</div></div>
+                  <div class="form-group"><label class="form-label">PR Interval</label><div class="input-with-unit"><input type="number" class="form-control" id="ecg_pr" placeholder="160"><span class="unit-tag">ms</span></div><div class="ref-range">Normal: 120–200 ms</div></div>
+                  <div class="form-group"><label class="form-label">QRS Duration</label><div class="input-with-unit"><input type="number" class="form-control" id="ecg_qrs" placeholder="90"><span class="unit-tag">ms</span></div><div class="ref-range">Normal: 70–120 ms</div></div>
+                  <div class="form-group"><label class="form-label">QT Interval</label><div class="input-with-unit"><input type="number" class="form-control" id="ecg_qt" placeholder="400"><span class="unit-tag">ms</span></div><div class="ref-range">Normal: 350–440 ms</div></div>
+                  <div class="form-group"><label class="form-label">QTc (Corrected QT)</label><div class="input-with-unit"><input type="number" class="form-control" id="ecg_qtc" placeholder="420"><span class="unit-tag">ms</span></div></div>
+                  <div class="form-group"><label class="form-label">Cardiac Axis</label><div class="input-with-unit"><input type="number" class="form-control" id="ecg_axis" placeholder="45" min="-90" max="270"><span class="unit-tag">°</span></div><div class="ref-range">Normal: -30° to +90°</div></div>
+                </div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Rhythm</label><select class="form-select" id="ecg_rhythm"><option value="">Select</option><option>Normal Sinus Rhythm</option><option>Sinus Tachycardia</option><option>Sinus Bradycardia</option><option>Atrial Fibrillation</option><option>Atrial Flutter</option><option>SVT</option><option>Ventricular Tachycardia</option><option>Heart Block — 1st Degree</option><option>Heart Block — 2nd Degree</option><option>Complete Heart Block</option><option>LBBB</option><option>RBBB</option></select></div>
+                  <div class="form-group"><label class="form-label">ST Segment</label><select class="form-select" id="ecg_st"><option value="">Select</option><option>Normal (isoelectric)</option><option>ST Elevation</option><option>ST Depression</option><option>Non-specific changes</option></select></div>
+                </div>
+                <div class="form-group"><label class="form-label">Interpretation / Findings</label><textarea class="form-control" id="ecg_interp" rows="3" placeholder="e.g. Normal ECG. No evidence of acute ischaemia or arrhythmia…"></textarea></div>
+                <div class="form-group"><label class="form-label">Recording Date &amp; Time</label><input type="datetime-local" class="form-control" id="ecg_datetime"></div>
+              </div>
+
+              <!-- PRESCRIPTION -->
+              <div class="report-panel" id="panel-prescription">
+                <div class="field-group-title">💊 Medication 1</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Medication Name</label><input type="text" class="form-control" id="rx_med1" placeholder="e.g. Paracetamol 500mg Tab"></div>
+                  <div class="form-group"><label class="form-label">Dosage</label><input type="text" class="form-control" id="rx_dose1" placeholder="e.g. 500 mg"></div>
+                  <div class="form-group"><label class="form-label">Route</label><select class="form-select" id="rx_route1"><option>Oral</option><option>IV</option><option>IM</option><option>Topical</option><option>Sublingual</option><option>Inhaled</option></select></div>
+                  <div class="form-group"><label class="form-label">Frequency</label><input type="text" class="form-control" id="rx_freq1" placeholder="e.g. TDS (3× daily)"></div>
+                  <div class="form-group"><label class="form-label">Duration</label><input type="text" class="form-control" id="rx_dur1" placeholder="e.g. 5 days"></div>
+                  <div class="form-group"><label class="form-label">With Food?</label><select class="form-select" id="rx_food1"><option>With Food</option><option>Before Food</option><option>After Food</option><option>As Needed (PRN)</option></select></div>
+                </div>
+                <div class="field-group-title">💊 Medication 2</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Medication Name</label><input type="text" class="form-control" id="rx_med2" placeholder="e.g. Amoxicillin 250mg Cap"></div>
+                  <div class="form-group"><label class="form-label">Dosage</label><input type="text" class="form-control" id="rx_dose2" placeholder="e.g. 250 mg"></div>
+                  <div class="form-group"><label class="form-label">Frequency</label><input type="text" class="form-control" id="rx_freq2" placeholder="e.g. BD (2× daily)"></div>
+                  <div class="form-group"><label class="form-label">Duration</label><input type="text" class="form-control" id="rx_dur2" placeholder="e.g. 7 days"></div>
+                </div>
+                <div class="field-group-title">💊 Medication 3</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Medication Name</label><input type="text" class="form-control" id="rx_med3" placeholder="e.g. Pantoprazole 40mg Tab"></div>
+                  <div class="form-group"><label class="form-label">Dosage + Frequency</label><input type="text" class="form-control" id="rx_dose3" placeholder="e.g. 40mg OD before breakfast"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Diagnosis / Reason</label><input type="text" class="form-control" id="rx_diagnosis" placeholder="e.g. Acute URTI, Hypertension Stage 1"></div>
+                <div class="form-group"><label class="form-label">Allergies Noted</label><input type="text" class="form-control" id="rx_allergies" placeholder="e.g. NKDA / Penicillin allergy"></div>
+                <div class="form-group"><label class="form-label">Doctor's Special Instructions</label><textarea class="form-control" id="rx_notes" rows="2" placeholder="e.g. Complete full course. Avoid alcohol. Review if no improvement."></textarea></div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Follow-up Date</label><input type="date" class="form-control" id="rx_followup"></div>
+                  <div class="form-group"><label class="form-label">Prescribing Doctor</label><input type="text" class="form-control" id="rx_doctor" placeholder="Dr. Name — Qualification — Reg. No."></div>
+                </div>
+              </div>
+
+              <!-- VACCINATION -->
+              <div class="report-panel" id="panel-vaccination">
+                <div class="field-group-title">💉 Vaccine Details</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Vaccine Name</label><input type="text" class="form-control" id="vx_name" placeholder="e.g. COVID-19 Covishield, MMR, Hepatitis B"></div>
+                  <div class="form-group"><label class="form-label">Manufacturer</label><input type="text" class="form-control" id="vx_mfr" placeholder="e.g. Serum Institute, Bharat Biotech"></div>
+                  <div class="form-group"><label class="form-label">Batch / Lot Number</label><input type="text" class="form-control" id="vx_batch" placeholder="e.g. AB12345C"></div>
+                  <div class="form-group"><label class="form-label">Dose Number</label><input type="text" class="form-control" id="vx_dose" placeholder="e.g. 1st Dose / 2nd Dose / Booster"></div>
+                  <div class="form-group"><label class="form-label">Route</label><select class="form-select" id="vx_route"><option>IM (Intramuscular)</option><option>SC (Subcutaneous)</option><option>Intradermal</option><option>Oral</option><option>Intranasal</option></select></div>
+                  <div class="form-group"><label class="form-label">Site</label><input type="text" class="form-control" id="vx_site" placeholder="e.g. Left Deltoid, Right Upper Arm"></div>
+                  <div class="form-group"><label class="form-label">Date Administered</label><input type="date" class="form-control" id="vx_date"></div>
+                  <div class="form-group"><label class="form-label">Next Dose Due</label><input type="date" class="form-control" id="vx_next"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Adverse Events / Reactions</label><textarea class="form-control" id="vx_adverse" rows="2" placeholder="e.g. None / Mild soreness at injection site / Low-grade fever for 24h"></textarea></div>
+                <div class="form-group"><label class="form-label">Administered By</label><input type="text" class="form-control" id="vx_by" placeholder="Nurse / Doctor name + facility"></div>
+              </div>
+
+              <!-- SURGERY -->
+              <div class="report-panel" id="panel-surgery">
+                <div class="field-group-title">🏥 Procedure Information</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Operation / Procedure Name</label><input type="text" class="form-control" id="sx_procedure" placeholder="e.g. Laparoscopic Appendectomy"></div>
+                  <div class="form-group"><label class="form-label">Indication / Diagnosis</label><input type="text" class="form-control" id="sx_indication" placeholder="e.g. Acute Appendicitis"></div>
+                  <div class="form-group"><label class="form-label">Date of Surgery</label><input type="date" class="form-control" id="sx_date"></div>
+                  <div class="form-group"><label class="form-label">Duration</label><input type="text" class="form-control" id="sx_duration" placeholder="e.g. 1 hr 20 min"></div>
+                  <div class="form-group"><label class="form-label">Anaesthesia</label><select class="form-select" id="sx_anaesthesia"><option value="">Select</option><option>General Anaesthesia (GA)</option><option>Spinal Anaesthesia</option><option>Epidural</option><option>Local Anaesthesia</option><option>Conscious Sedation</option></select></div>
+                  <div class="form-group"><label class="form-label">Approach</label><select class="form-select" id="sx_approach"><option value="">Select</option><option>Laparoscopic (Keyhole)</option><option>Open Surgery</option><option>Robotic</option><option>Endoscopic</option><option>Arthroscopic</option></select></div>
+                  <div class="form-group"><label class="form-label">Estimated Blood Loss</label><input type="text" class="form-control" id="sx_ebl" placeholder="e.g. Minimal (&lt;50 mL)"></div>
+                  <div class="form-group"><label class="form-label">Hospital / OT</label><input type="text" class="form-control" id="sx_hospital" placeholder="e.g. Apollo Hospital, OT-3"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Intraoperative Findings</label><textarea class="form-control" id="sx_findings" rows="3" placeholder="What was found during surgery…"></textarea></div>
+                <div class="form-group"><label class="form-label">Post-op Instructions</label><textarea class="form-control" id="sx_postop" rows="2" placeholder="Wound care, restrictions, follow-up…"></textarea></div>
+                <div class="form-group"><label class="form-label">Surgeon</label><input type="text" class="form-control" id="sx_surgeon" placeholder="Dr. Name — MS (General Surgery)"></div>
+              </div>
+
+              <!-- ALLERGY -->
+              <div class="report-panel" id="panel-allergy">
+                <div class="field-group-title">⚠️ Allergy Test Details</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Test Type</label><select class="form-select" id="al_test"><option value="">Select</option><option>Skin Prick Test (SPT)</option><option>Intradermal Test</option><option>Patch Test</option><option>Serum IgE (RAST)</option><option>Oral Food Challenge</option></select></div>
+                  <div class="form-group"><label class="form-label">Test Date</label><input type="date" class="form-control" id="al_date"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Allergens Tested</label><textarea class="form-control" id="al_allergens" rows="2" placeholder="e.g. Dust mites, Pollen, Peanuts, Penicillin, Latex, Cat dander…"></textarea></div>
+                <div class="form-group"><label class="form-label">Positive Reactions</label><textarea class="form-control" id="al_positive" rows="2" placeholder="e.g. Dust mite (++), Pollen (+++), Peanut (++++)"></textarea></div>
+                <div class="form-group"><label class="form-label">Total IgE</label><div class="input-with-unit" style="max-width:220px;"><input type="number" class="form-control" id="al_ige" placeholder="150" step="0.1"><span class="unit-tag">IU/mL</span></div><div class="ref-range">Normal: 0–100 IU/mL</div></div>
+                <div class="form-group">
+                  <label class="form-label">Reaction Severity</label>
+                  <div class="sev-row">
+                    <button type="button" class="sev-btn" onclick="setSeverity(this,'Mild','sel-mild')">Mild</button>
+                    <button type="button" class="sev-btn" onclick="setSeverity(this,'Moderate','sel-moderate')">Moderate</button>
+                    <button type="button" class="sev-btn" onclick="setSeverity(this,'Severe','sel-severe')">Severe</button>
+                    <button type="button" class="sev-btn" onclick="setSeverity(this,'Anaphylaxis','sel-severe')">Anaphylaxis</button>
+                  </div>
+                  <input type="hidden" id="al_severity" value="">
+                </div>
+                <div class="form-group"><label class="form-label">Symptoms</label><textarea class="form-control" id="al_symptoms" rows="2" placeholder="e.g. Urticaria, Rhinitis, Bronchospasm…"></textarea></div>
+                <div class="form-group"><label class="form-label">Recommended Treatment / Avoidance</label><textarea class="form-control" id="al_treatment" rows="2" placeholder="e.g. Avoid dust. Carry Epipen. Cetirizine 10mg PRN."></textarea></div>
+                <div class="form-group"><label class="form-label">Allergist / Immunologist</label><input type="text" class="form-control" id="al_doctor" placeholder="Dr. Name"></div>
+              </div>
+
+              <!-- DIABETES -->
+              <div class="report-panel" id="panel-diabetes">
+                <div class="field-group-title">🍬 Glycaemic Control</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">HbA1c</label><div class="input-with-unit"><input type="number" class="form-control" id="db_hba1c" placeholder="5.7" step="0.1"><span class="unit-tag">%</span></div><div class="ref-range">Normal:&lt;5.7% | Pre-DM:5.7–6.4% | DM:≥6.5%</div></div>
+                  <div class="form-group"><label class="form-label">Fasting Blood Sugar (FBS)</label><div class="input-with-unit"><input type="number" class="form-control" id="db_fbs" placeholder="95" step="0.1"><span class="unit-tag">mg/dL</span></div><div class="ref-range">Normal:70–100 | Pre-DM:100–125 | DM:≥126</div></div>
+                  <div class="form-group"><label class="form-label">Post-Prandial (PPBS)</label><div class="input-with-unit"><input type="number" class="form-control" id="db_ppbs" placeholder="130" step="0.1"><span class="unit-tag">mg/dL</span></div><div class="ref-range">Normal:&lt;140 | Pre-DM:140–199 | DM:≥200</div></div>
+                  <div class="form-group"><label class="form-label">Random Blood Sugar (RBS)</label><div class="input-with-unit"><input type="number" class="form-control" id="db_rbs" placeholder="120" step="0.1"><span class="unit-tag">mg/dL</span></div></div>
+                  <div class="form-group"><label class="form-label">Fasting Insulin</label><div class="input-with-unit"><input type="number" class="form-control" id="db_insulin" placeholder="10" step="0.1"><span class="unit-tag">µIU/mL</span></div><div class="ref-range">Normal: 2–25 µIU/mL</div></div>
+                  <div class="form-group"><label class="form-label">C-Peptide</label><div class="input-with-unit"><input type="number" class="form-control" id="db_cpeptide" placeholder="1.5" step="0.01"><span class="unit-tag">ng/mL</span></div><div class="ref-range">Normal: 0.5–2.0 ng/mL</div></div>
+                  <div class="form-group"><label class="form-label">eGFR</label><div class="input-with-unit"><input type="number" class="form-control" id="db_egfr" placeholder="90" step="0.1"><span class="unit-tag">mL/min</span></div><div class="ref-range">Normal: ≥90 mL/min/1.73m²</div></div>
+                  <div class="form-group"><label class="form-label">Urine Microalbumin</label><div class="input-with-unit"><input type="number" class="form-control" id="db_microalb" placeholder="15" step="0.1"><span class="unit-tag">mg/L</span></div><div class="ref-range">Normal: &lt;30 mg/L</div></div>
+                </div>
+                <div class="form-group"><label class="form-label">Diabetes Classification</label><select class="form-select" id="db_type"><option value="">Select</option><option>Type 1 DM</option><option>Type 2 DM</option><option>Pre-Diabetes / IGT</option><option>Gestational Diabetes</option><option>MODY</option></select></div>
+                <div class="form-group"><label class="form-label">Current Medications</label><textarea class="form-control" id="db_meds" rows="2" placeholder="e.g. Metformin 500mg BD, Insulin Glargine 20U nocte"></textarea></div>
+                <div class="form-group"><label class="form-label">Complications Noted</label><textarea class="form-control" id="db_complications" rows="2" placeholder="e.g. Diabetic retinopathy, Peripheral neuropathy, None"></textarea></div>
+                <div class="form-group"><label class="form-label">Test Date</label><input type="date" class="form-control" id="db_date"></div>
+              </div>
+
+              <!-- THYROID -->
+              <div class="report-panel" id="panel-thyroid">
+                <div class="field-group-title">🦋 Thyroid Function Tests (TFT)</div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">TSH</label><div class="input-with-unit"><input type="number" class="form-control" id="th_tsh" placeholder="2.1" step="0.01"><span class="unit-tag">mIU/L</span></div><div class="ref-range">Normal: 0.4–4.0 mIU/L</div></div>
+                  <div class="form-group"><label class="form-label">Free T4</label><div class="input-with-unit"><input type="number" class="form-control" id="th_ft4" placeholder="1.2" step="0.01"><span class="unit-tag">ng/dL</span></div><div class="ref-range">Normal: 0.8–1.8 ng/dL</div></div>
+                  <div class="form-group"><label class="form-label">Free T3</label><div class="input-with-unit"><input type="number" class="form-control" id="th_ft3" placeholder="3.1" step="0.01"><span class="unit-tag">pg/mL</span></div><div class="ref-range">Normal: 2.3–4.2 pg/mL</div></div>
+                  <div class="form-group"><label class="form-label">Total T4</label><div class="input-with-unit"><input type="number" class="form-control" id="th_t4" placeholder="8.0" step="0.1"><span class="unit-tag">µg/dL</span></div><div class="ref-range">Normal: 5.0–12.0</div></div>
+                  <div class="form-group"><label class="form-label">Total T3</label><div class="input-with-unit"><input type="number" class="form-control" id="th_t3" placeholder="130"><span class="unit-tag">ng/dL</span></div><div class="ref-range">Normal: 80–200 ng/dL</div></div>
+                  <div class="form-group"><label class="form-label">Anti-TPO Antibodies</label><div class="input-with-unit"><input type="number" class="form-control" id="th_tpo" placeholder="10" step="0.1"><span class="unit-tag">IU/mL</span></div><div class="ref-range">Normal: &lt;35 IU/mL</div></div>
+                </div>
+                <div class="form-group"><label class="form-label">Clinical Impression</label><select class="form-select" id="th_impression"><option value="">Select</option><option>Euthyroid (Normal)</option><option>Hypothyroidism — Primary</option><option>Hyperthyroidism</option><option>Hashimoto's Thyroiditis</option><option>Graves' Disease</option><option>Subclinical Hypothyroidism</option><option>Subclinical Hyperthyroidism</option></select></div>
+                <div class="form-group"><label class="form-label">Symptoms</label><textarea class="form-control" id="th_symptoms" rows="2" placeholder="e.g. Fatigue, weight gain, cold intolerance, hair loss, palpitations…"></textarea></div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Current Medication</label><input type="text" class="form-control" id="th_meds" placeholder="e.g. Levothyroxine 50mcg OD / None"></div>
+                  <div class="form-group"><label class="form-label">Test Date</label><input type="date" class="form-control" id="th_date"></div>
+                </div>
+              </div>
+
+              <!-- OTHER / CUSTOM -->
+              <div class="report-panel" id="panel-other">
+                <div class="field-group-title">📝 Custom Report</div>
+                <div class="form-group"><label class="form-label">Report Name / Title <span style="color:var(--danger)">*</span></label><input type="text" class="form-control" id="ot_name" placeholder="e.g. Liver Function Test, COVID-19 RT-PCR, Semen Analysis, Audiometry…" required></div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Test Date</label><input type="date" class="form-control" id="ot_date"></div>
+                  <div class="form-group"><label class="form-label">Testing Facility / Lab</label><input type="text" class="form-control" id="ot_lab" placeholder="Lab / Hospital name"></div>
+                </div>
+                <div class="field-group-title">Test Parameters (add up to 6)</div>
+                <div id="ot_params_container">
+                  <div class="grid-2" style="margin-bottom:0.5rem;"><input type="text" class="form-control" id="ot_p1n" placeholder="Parameter name e.g. Bilirubin Total"><input type="text" class="form-control" id="ot_p1v" placeholder="Value e.g. 0.8 mg/dL | Ref: 0.3–1.2"></div>
+                  <div class="grid-2" style="margin-bottom:0.5rem;"><input type="text" class="form-control" id="ot_p2n" placeholder="Parameter name"><input type="text" class="form-control" id="ot_p2v" placeholder="Value + reference range"></div>
+                  <div class="grid-2" style="margin-bottom:0.5rem;"><input type="text" class="form-control" id="ot_p3n" placeholder="Parameter name"><input type="text" class="form-control" id="ot_p3v" placeholder="Value + reference range"></div>
+                  <div class="grid-2" style="margin-bottom:0.5rem;"><input type="text" class="form-control" id="ot_p4n" placeholder="Parameter name"><input type="text" class="form-control" id="ot_p4v" placeholder="Value + reference range"></div>
+                  <div class="grid-2" style="margin-bottom:0.5rem;"><input type="text" class="form-control" id="ot_p5n" placeholder="Parameter name"><input type="text" class="form-control" id="ot_p5v" placeholder="Value + reference range"></div>
+                  <div class="grid-2" style="margin-bottom:0.5rem;"><input type="text" class="form-control" id="ot_p6n" placeholder="Parameter name"><input type="text" class="form-control" id="ot_p6v" placeholder="Value + reference range"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Overall Findings / Summary</label><textarea class="form-control" id="ot_findings" rows="3" placeholder="Paste or summarise the lab report results here…"></textarea></div>
+                <div class="form-group"><label class="form-label">Impression / Interpretation</label><textarea class="form-control" id="ot_impression" rows="2" placeholder="Normal / Abnormal — describe notable findings…"></textarea></div>
+                <div class="grid-2">
+                  <div class="form-group"><label class="form-label">Ordered By / Clinician</label><input type="text" class="form-control" id="ot_doctor" placeholder="Dr. Name"></div>
+                </div>
+              </div>
+
+              <!-- SUBMIT -->
+              <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);">
+                <button type="button" class="btn btn-accent btn-lg" id="uploadBtn" onclick="submitReport()" disabled>
+                  🔒 Encrypt &amp; Upload Securely
+                </button>
+                <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">
+                  Data is encrypted with AES-256-GCM. SHA-256 integrity hash and ECDSA digital signature are applied before storage.
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="section" id="section-profile">
+        <div style="max-width:480px;">
+          <div class="card">
+            <div class="card-header"><span class="card-title">👤 My Profile</span></div>
+            <div class="card-body" id="profileContent">Loading...</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- View Modal -->
+<div class="modal-overlay" id="viewModal">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-header">
+      <span class="card-title">📋 Medical Record</span>
+      <button onclick="closeModal()" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:1.2rem;">✕</button>
+    </div>
+    <div class="modal-body" id="viewContent" style="max-height:70vh;overflow-y:auto;"></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">Close</button></div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+  if (!Auth.requireLogin('patient')) {}
+  const user = Auth.getUser();
+  if (user) {
+    document.getElementById('sidebarUserName').textContent = user.name;
+    document.getElementById('topbarUserName').textContent  = user.name;
+    document.getElementById('avatarInitial').textContent   = user.name[0].toUpperCase();
+  }
+
+  function showSection(name, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('active');
+    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('pageTitle').textContent = el.textContent.trim().replace(/^\S+\s+/, '');
+    const loaders = { dashboard: loadDashboard, records: loadRecords, profile: loadProfile };
+    if (loaders[name]) loaders[name]();
+  }
+
+  let currentType = '';
+
+  const typeLabels = {
+    vital_signs:'Vital Signs', blood_test:'Blood Test', urine_test:'Urine Test',
+    imaging:'Imaging / Scan', ecg:'ECG / EKG', prescription:'Prescription',
+    vaccination:'Vaccination', surgery:'Surgery / Op Notes',
+    allergy:'Allergy Test', diabetes:'Diabetes Panel', thyroid:'Thyroid Panel', other:'Other / Custom'
+  };
+
+  function selectType(type, btn) {
+    currentType = type;
+    document.querySelectorAll('.rtype-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('selectedTypeLabel').textContent = typeLabels[type] || type;
+    document.getElementById('selectedTypeDisplay').style.display = 'block';
+    document.getElementById('formCard').style.display = 'block';
+    document.querySelectorAll('.report-panel').forEach(p => p.classList.remove('show'));
+    const panel = document.getElementById('panel-' + type);
+    if (panel) panel.classList.add('show');
+    document.getElementById('uploadBtn').disabled = false;
+
+    // auto-fill date fields
+    const today = new Date().toISOString().split('T')[0];
+    const now   = new Date().toISOString().slice(0,16);
+    const dateMap = {
+      vital_signs:['vs_datetime'], blood_test:['bt_date'], urine_test:['ut_date'],
+      imaging:['img_date'], ecg:['ecg_datetime'], vaccination:['vx_date'],
+      diabetes:['db_date'], thyroid:['th_date'], other:['ot_date']
+    };
+    (dateMap[type] || []).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = el.type === 'datetime-local' ? now : today;
+    });
+
+    document.getElementById('formCard').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  // BMI auto-calc
+  ['vs_height','vs_weight'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => {
+      const h = parseFloat(document.getElementById('vs_height').value);
+      const w = parseFloat(document.getElementById('vs_weight').value);
+      if (h && w) document.getElementById('vs_bmi').value = (w/((h/100)**2)).toFixed(1);
+    });
+  });
+
+  function setSeverity(btn, val, cls) {
+    document.getElementById('al_severity').value = val;
+    document.querySelectorAll('.sev-btn').forEach(b => b.classList.remove('sel-mild','sel-moderate','sel-severe'));
+    btn.classList.add(cls);
+  }
+
+  function g(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+  function n(id) { const el = document.getElementById(id); return el ? (parseFloat(el.value)||el.value||'') : ''; }
+
+  function collectFormData() {
+    const collectors = {
+      vital_signs: ()=>({ blood_pressure_systolic:n('vs_bp_sys'), blood_pressure_diastolic:n('vs_bp_dia'), heart_rate:n('vs_hr'), oxygen_saturation:n('vs_spo2'), body_temperature:n('vs_temp'), respiratory_rate:n('vs_rr'), height_cm:n('vs_height'), weight_kg:n('vs_weight'), bmi:n('vs_bmi'), clinical_notes:g('vs_notes'), clinician:g('vs_clinician'), datetime:g('vs_datetime') }),
+      blood_test: ()=>({ hemoglobin:n('bt_hgb'), hematocrit:n('bt_hct'), rbc:n('bt_rbc'), wbc:n('bt_wbc'), platelets:n('bt_plt'), mcv:n('bt_mcv'), glucose_fasting:n('bt_glucose'), cholesterol_total:n('bt_chol'), hdl:n('bt_hdl'), ldl:n('bt_ldl'), triglycerides:n('bt_trig'), creatinine:n('bt_creat'), bun:n('bt_bun'), sodium:n('bt_na'), potassium:n('bt_k'), alt:n('bt_alt'), ast:n('bt_ast'), lab:g('bt_lab'), sample_date:g('bt_date'), notes:g('bt_notes') }),
+      urine_test: ()=>({ colour:g('ut_colour'), appearance:g('ut_appear'), ph:n('ut_ph'), specific_gravity:n('ut_sg'), protein:g('ut_protein'), glucose:g('ut_glucose'), ketones:g('ut_ketones'), blood:g('ut_blood'), leukocyte_esterase:g('ut_le'), nitrites:g('ut_nitrites'), rbc_hpf:g('ut_rbc'), wbc_hpf:g('ut_wbc'), epithelial_cells:g('ut_epi'), casts:g('ut_casts'), crystals:g('ut_crystals'), bacteria:g('ut_bacteria'), notes:g('ut_notes'), test_date:g('ut_date') }),
+      imaging: ()=>({ imaging_type:g('img_type'), body_part:g('img_part'), laterality:g('img_side'), views:g('img_views'), contrast:g('img_contrast'), scan_date:g('img_date'), findings:g('img_findings'), impression:g('img_impression'), recommendations:g('img_rec'), radiologist:g('img_radiologist'), centre:g('img_centre') }),
+      ecg: ()=>({ heart_rate:n('ecg_hr'), pr_interval_ms:n('ecg_pr'), qrs_duration_ms:n('ecg_qrs'), qt_interval_ms:n('ecg_qt'), qtc_ms:n('ecg_qtc'), axis_degrees:n('ecg_axis'), rhythm:g('ecg_rhythm'), st_segment:g('ecg_st'), interpretation:g('ecg_interp'), datetime:g('ecg_datetime') }),
+      prescription: ()=>({ medication_1:g('rx_med1'), dosage_1:g('rx_dose1'), route_1:g('rx_route1'), frequency_1:g('rx_freq1'), duration_1:g('rx_dur1'), food_instruction_1:g('rx_food1'), medication_2:g('rx_med2'), dosage_2:g('rx_dose2'), frequency_2:g('rx_freq2'), duration_2:g('rx_dur2'), medication_3:g('rx_med3'), dosage_3:g('rx_dose3'), diagnosis:g('rx_diagnosis'), allergies:g('rx_allergies'), doctor_notes:g('rx_notes'), follow_up_date:g('rx_followup'), prescribing_doctor:g('rx_doctor') }),
+      vaccination: ()=>({ vaccine_name:g('vx_name'), manufacturer:g('vx_mfr'), batch_number:g('vx_batch'), dose_number:g('vx_dose'), route:g('vx_route'), site:g('vx_site'), date_administered:g('vx_date'), next_dose_due:g('vx_next'), adverse_events:g('vx_adverse'), administered_by:g('vx_by') }),
+      surgery: ()=>({ procedure:g('sx_procedure'), indication:g('sx_indication'), date:g('sx_date'), duration:g('sx_duration'), anaesthesia:g('sx_anaesthesia'), approach:g('sx_approach'), estimated_blood_loss:g('sx_ebl'), hospital:g('sx_hospital'), intraop_findings:g('sx_findings'), postop_instructions:g('sx_postop'), surgeon:g('sx_surgeon') }),
+      allergy: ()=>({ test_type:g('al_test'), test_date:g('al_date'), allergens_tested:g('al_allergens'), positive_reactions:g('al_positive'), total_ige:n('al_ige'), severity:g('al_severity'), symptoms:g('al_symptoms'), recommended_treatment:g('al_treatment'), allergist:g('al_doctor') }),
+      diabetes: ()=>({ hba1c:n('db_hba1c'), fasting_blood_sugar:n('db_fbs'), ppbs:n('db_ppbs'), rbs:n('db_rbs'), fasting_insulin:n('db_insulin'), c_peptide:n('db_cpeptide'), egfr:n('db_egfr'), urine_microalbumin:n('db_microalb'), diabetes_type:g('db_type'), current_medications:g('db_meds'), complications:g('db_complications'), test_date:g('db_date') }),
+      thyroid: ()=>({ tsh:n('th_tsh'), free_t4:n('th_ft4'), free_t3:n('th_ft3'), total_t4:n('th_t4'), total_t3:n('th_t3'), anti_tpo:n('th_tpo'), impression:g('th_impression'), symptoms:g('th_symptoms'), current_medication:g('th_meds'), test_date:g('th_date') }),
+      other: ()=>{
+        const params = {};
+        for(let i=1;i<=6;i++){const nm=g(`ot_p${i}n`),vl=g(`ot_p${i}v`); if(nm) params[nm]=vl;}
+        return { report_name:g('ot_name'), test_date:g('ot_date'), lab:g('ot_lab'), parameters:params, findings:g('ot_findings'), impression:g('ot_impression'), ordered_by:g('ot_doctor') };
+      }
+    };
+    return collectors[currentType] ? collectors[currentType]() : {};
+  }
+
+  async function submitReport() {
+    if (!currentType) { Toast.show('Please select a report type first', 'error'); return; }
+    if (currentType === 'other' && !document.getElementById('ot_name').value.trim()) {
+      Toast.show('Please enter a report name', 'error'); return;
+    }
+    const btn = document.getElementById('uploadBtn');
+    const msgEl = document.getElementById('uploadMsg');
+    const docId = document.getElementById('upload_doctor').value;
+    msgEl.innerHTML = '';
+    UI.loading(btn, true);
+
+    const body = { report_type: currentType, report_data: collectFormData() };
+    if (docId) body.doctor_id = parseInt(docId);
+
+    const res = await Http.post('/medical/upload', body);
+    UI.loading(btn, false);
+
+    if (res.ok) {
+     msgEl.innerHTML = `<div class="alert alert-success">
+        <strong>✓ Report encrypted and uploaded!</strong><br>
+        <span style="font-family:var(--font-mono);font-size:0.75rem;">
+          SHA-256: ${res.data.sha256}<br>
+          Algorithm: ${res.data.algorithm} | Sig: ${res.data.sig}<br>
+          Report ID: #${res.data.report_id}
+        </span>
+      </div>`;
+      currentType = '';
+      document.querySelectorAll('.rtype-btn').forEach(b=>b.classList.remove('selected'));
+      document.querySelectorAll('.report-panel').forEach(p=>p.classList.remove('show'));
+      document.getElementById('selectedTypeDisplay').style.display = 'none';
+      document.getElementById('uploadBtn').disabled = true;
+      document.querySelectorAll('.report-panel input, .report-panel textarea').forEach(el => el.value = '');
+      document.querySelectorAll('.report-panel select').forEach(el => el.selectedIndex = 0);
+      Toast.show('Report encrypted & saved!', 'success');
+    } else {
+      msgEl.innerHTML = `<div class="alert alert-danger">✕ ${res.data.error || 'Upload failed'}</div>`;
+    }
+  }
+
+  async function loadDashboard() {
+    const res = await Http.get('/patient/dashboard');
+    if (!res.ok) return;
+    document.getElementById('stat-records').textContent = res.data.stats.total_records;
+    document.getElementById('recentTable').innerHTML = res.data.recent_records.length
+      ? res.data.recent_records.map(r=>`
+          <tr>
+            <td>${UI.badge(r.report_type, r.report_type)}</td>
+            <td style="color:var(--text-muted)">${r.doctor_id ? 'Dr. #'+r.doctor_id : '— Private'}</td>
+            <td style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted)">${r.hash_value.substring(0,18)}…</td>
+            <td style="color:var(--text-muted);font-size:0.8rem;">${UI.formatDate(r.created_at)}</td>
+            <td><button class="btn btn-primary btn-sm" onclick="viewRecord(${r.report_id})">🔓 Decrypt &View</button></td>
+          </tr>`).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">No records yet — upload your first report!</td></tr>';
+  }
+
+  async function loadRecords() {
+    const res = await Http.get('/patient/records');
+    if (!res.ok) return;
+    document.getElementById('recordsTable').innerHTML = res.data.records.length
+      ? res.data.records.map(r=>`
+          <tr>
+            <td style="font-family:var(--font-mono);color:var(--text-muted)">#${r.report_id}</td>
+            <td>${UI.badge(r.report_type, r.report_type)}</td>
+            <td style="color:var(--text-muted)">${r.doctor_name||(r.doctor_id?'Dr. #'+r.doctor_id:'— Private')}</td>
+            <td style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted)">${r.hash_value.substring(0,20)}…</td>
+            <td style="color:var(--text-muted);font-size:0.8rem;">${UI.formatDate(r.created_at)}</td>
+            <td><button class="btn btn-primary btn-sm" onclick="viewRecord(${r.report_id})">🔓 View</button></td>
+          </tr>`).join('')
+      : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">No records yet</td></tr>';
+  }
+
+  async function loadDoctors() {
+    const res = await Http.get('/patient/doctors');
+    if (!res.ok) return;
+    const sel = document.getElementById('upload_doctor');
+    res.data.doctors.forEach(d => {
+      if (!sel.querySelector(`option[value="${d.doctor_id}"]`))
+        sel.add(new Option(`${d.name} (${d.specialization||'General'})`, d.doctor_id));
+    });
+  }
+
+  async function loadProfile() {
+    const res = await Http.get('/patient/profile');
+    if (!res.ok) return;
+    const d = res.data;
+    document.getElementById('profileContent').innerHTML = `
+      <div class="crypto-info">
+        <div><span class="label">Name:</span> <span class="value">${d.name}</span></div>
+        <div><span class="label">Email:</span> <span class="value">${d.email}</span></div>
+        <div><span class="label">Age:</span> <span class="value">${d.age||'—'}</span></div>
+        <div><span class="label">Gender:</span> <span class="value">${d.gender||'—'}</span></div>
+        <div><span class="label">Blood Group:</span> <span class="value">${d.blood_group||'—'}</span></div>
+        <div><span class="label">Emergency Contact:</span> <span class="value">${d.emergency_contact||'—'}</span></div>
+        <div><span class="label">Medical History:</span> <span class="value">${d.medical_history||'None recorded'}</span></div>
+      </div>`;
+  }
+
+  async function viewRecord(id) {
+    const res = await Http.get(`/patient/records/${id}/view`);
+    const modal = document.getElementById('viewModal');
+    const content = document.getElementById('viewContent');
+    if (res.ok) {
+      const d = res.data;
+      const dataHtml = Object.entries(d.data||{}).map(([k,v])=>{
+        if(v===''||v===null||v===undefined||(typeof v==='number'&&v===0)) return '';
+        if(typeof v==='object') return `<div><span class="label">${k.replace(/_/g,' ')}:</span> <span class="value">${JSON.stringify(v)}</span></div>`;
+        return `<div><span class="label">${k.replace(/_/g,' ')}:</span> <span class="value">${v}</span></div>`;
+      }).filter(Boolean).join('');
+      content.innerHTML = `
+        <div style="margin-bottom:1rem;">${UI.badge(d.report_type,d.report_type)} <span style="margin-left:0.5rem;font-size:0.8rem;color:var(--text-muted)">${UI.formatDate(d.created_at)}</span></div>
+        <div style="margin-bottom:1rem;"><span class="badge ${d.integrity_check?'badge-active':'badge-suspended'}">${d.integrity_check?'✓ Integrity OK':'✕ Integrity Fail'}</span></div>
+        <div class="crypto-info">${dataHtml||'<span style="color:var(--text-muted)">No data fields</span>'}</div>`;
+    } else {
+      content.innerHTML = `<div class="alert alert-danger">✕ ${res.data.error}</div>`;
+    }
+    modal.classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('viewModal').classList.remove('open'); }
+
+  loadDashboard();
+  loadDoctors();
+</script>
+</body>
+</html>

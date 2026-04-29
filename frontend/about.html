@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Project — MedSecure</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .about-hero {
+      background: linear-gradient(135deg, #0d1b3e 0%, #071424 100%);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 2.5rem; margin-bottom: 1.5rem; position: relative; overflow: hidden;
+    }
+    .about-hero::before {
+      content:''; position:absolute; width:400px; height:400px; border-radius:50%;
+      background:radial-gradient(circle,rgba(10,132,255,0.1) 0%,transparent 65%);
+      top:-150px; right:-100px;
+    }
+    .about-hero h1 { font-size:1.5rem; font-weight:900; margin-bottom:0.5rem; letter-spacing:-0.02em; }
+    .about-hero h1 span { color:var(--primary); }
+    .about-hero .meta { font-size:0.82rem; color:var(--text-muted); }
+    .about-hero .meta strong { color:var(--accent); }
+
+    .team-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+    .team-card { background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; text-align:center; }
+    .team-avatar { width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,var(--primary),#5AC8FA); display:flex; align-items:center; justify-content:center; font-size:1.3rem; margin:0 auto 0.75rem; }
+    .team-name { font-weight:700; font-size:0.88rem; margin-bottom:4px; }
+    .team-roll { font-family:var(--font-mono); font-size:0.72rem; color:var(--accent); }
+
+    .module-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+    .module-card { background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; }
+    .module-icon { font-size:1.6rem; margin-bottom:0.6rem; }
+    .module-title { font-weight:700; font-size:0.9rem; margin-bottom:0.4rem; color:var(--text-primary); }
+    .module-desc { font-size:0.78rem; color:var(--text-secondary); line-height:1.6; }
+
+    .info-section { background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1.25rem; }
+    .info-section h3 { font-size:1rem; font-weight:700; margin-bottom:1rem; color:var(--text-primary); display:flex; align-items:center; gap:0.5rem; }
+    .info-section p { font-size:0.83rem; color:var(--text-secondary); line-height:1.75; margin-bottom:0.75rem; }
+    .info-section p:last-child { margin-bottom:0; }
+
+    .existing-list, .proposed-list { list-style:none; }
+    .existing-list li { font-size:0.82rem; color:var(--text-secondary); line-height:1.65; padding:0.4rem 0; border-bottom:1px solid var(--border); display:flex; gap:0.6rem; }
+    .existing-list li:last-child { border-bottom:none; }
+    .existing-list li::before { content:'✕'; color:var(--danger); font-size:0.75rem; flex-shrink:0; margin-top:2px; }
+    .proposed-list li { font-size:0.82rem; color:var(--text-secondary); line-height:1.65; padding:0.4rem 0; border-bottom:1px solid var(--border); display:flex; gap:0.6rem; }
+    .proposed-list li:last-child { border-bottom:none; }
+    .proposed-list li::before { content:'➤'; color:var(--primary); font-size:0.75rem; flex-shrink:0; margin-top:2px; }
+
+    .req-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .req-box { background:var(--bg-dark); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; }
+    .req-box h4 { font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.85rem; }
+    .req-box h4.sw { color:var(--primary); }
+    .req-box h4.hw { color:var(--accent); }
+    .req-item { display:flex; align-items:flex-start; gap:0.6rem; font-size:0.8rem; color:var(--text-secondary); padding:0.35rem 0; }
+    .req-item .ri { color:var(--text-muted); font-size:0.65rem; flex-shrink:0; margin-top:3px; }
+    .req-item strong { color:var(--text-primary); font-weight:600; }
+
+    .testing-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; }
+    .test-card { background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:1.1rem; }
+    .test-badge { display:inline-block; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; padding:3px 10px; border-radius:12px; margin-bottom:0.6rem; }
+    .tb-unit { background:rgba(10,132,255,0.12); color:var(--primary); border:1px solid rgba(10,132,255,0.25); }
+    .tb-int  { background:rgba(0,214,143,0.12); color:var(--accent);   border:1px solid rgba(0,214,143,0.25); }
+    .tb-sys  { background:rgba(255,149,0,0.12);  color:var(--warning); border:1px solid rgba(255,149,0,0.25); }
+    .tb-acc  { background:rgba(90,200,250,0.12); color:#5ac8fa;        border:1px solid rgba(90,200,250,0.25); }
+    .test-title { font-size:0.88rem; font-weight:700; margin-bottom:0.4rem; }
+    .test-desc  { font-size:0.77rem; color:var(--text-secondary); line-height:1.6; }
+
+    .future-list li { font-size:0.82rem; color:var(--text-secondary); line-height:1.7; padding:0.5rem 0; border-bottom:1px solid var(--border); display:flex; gap:0.75rem; }
+    .future-list li:last-child { border-bottom:none; }
+    .future-list .fi { font-size:1rem; flex-shrink:0; }
+
+    .ref-list { list-style:none; }
+    .ref-list li { font-size:0.79rem; color:var(--text-secondary); line-height:1.65; padding:0.45rem 0; border-bottom:1px solid var(--border); display:flex; gap:0.6rem; }
+    .ref-list li:last-child { border-bottom:none; }
+    .ref-list .rn { color:var(--primary); font-weight:700; flex-shrink:0; font-family:var(--font-mono); font-size:0.72rem; }
+
+    .uml-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; }
+    .uml-card { background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:1.1rem; }
+    .uml-icon { font-size:1.5rem; margin-bottom:0.5rem; }
+    .uml-title { font-size:0.87rem; font-weight:700; margin-bottom:0.35rem; }
+    .uml-desc  { font-size:0.77rem; color:var(--text-secondary); line-height:1.55; }
+
+    .back-btn { display:inline-flex; align-items:center; gap:0.5rem; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:0.5rem 1rem; font-size:0.82rem; color:var(--text-secondary); cursor:pointer; text-decoration:none; margin-bottom:1.5rem; transition:border-color .15s; }
+    .back-btn:hover { border-color:var(--primary); color:var(--text-primary); }
+
+    @media (max-width:640px) { .req-grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<div class="dash-wrapper" style="display:block;">
+  <div class="main-content" style="margin-left:0;">
+    <header class="topbar">
+      <span class="topbar-title">📄 About Project</span>
+      <div class="topbar-right">
+        <div class="user-chip">
+          <div class="user-avatar" id="avatarInitial" style="background:linear-gradient(135deg,var(--primary),#5AC8FA)">U</div>
+          <span id="topbarUserName">User</span>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+
+      <a class="back-btn" id="backBtn" href="#">← Back to Dashboard</a>
+
+      <!-- HERO -->
+      <div class="about-hero">
+        <div style="position:relative;z-index:1;">
+          <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;">
+            <span class="badge badge-active">Cyber Security</span>
+            <span class="badge badge-doctor">Batch 15</span>
+            <span class="badge badge-pending">Final Year Project</span>
+          </div>
+          <h1>Hybrid Cryptographic Architecture for<br><span>Healthcare Data Security in Cloud Environments</span></h1>
+          <p class="meta" style="margin-top:0.75rem;">
+            <strong>SV College of Engineering (Autonomous)</strong> · Karakambadi Road, Opp. LIC Training Center, Tirupati — 517507<br>
+            Department of Cyber Security &nbsp;|&nbsp; Under the Guidance of <strong>Ms. M. Keerthi</strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- TEAM -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-header"><span class="card-title">👥 Project Team</span></div>
+        <div class="card-body">
+          <div class="team-cards">
+            <div class="team-card"><div class="team-avatar">K</div><div class="team-name">Kudani Manisha</div><div class="team-roll">22BFA37053</div></div>
+            <div class="team-card"><div class="team-avatar">P</div><div class="team-name">Kamasani Pavan Kumar</div><div class="team-roll">22BFA37050</div></div>
+            <div class="team-card"><div class="team-avatar">D</div><div class="team-name">Kalluru Divya Sree</div><div class="team-roll">22BFA37049</div></div>
+            <div class="team-card"><div class="team-avatar">G</div><div class="team-name">G S Guhanesh</div><div class="team-roll">22BFA37045</div></div>
+          </div>
+          <div style="background:rgba(10,132,255,0.06);border:1px solid rgba(10,132,255,0.15);border-radius:var(--radius);padding:0.85rem 1.25rem;">
+            <span style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;letter-spacing:0.06em;">Project Guide</span>
+            <div style="font-size:1rem;font-weight:700;color:var(--primary);margin-top:3px;">Ms. M. Keerthi</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">Department of Cyber Security, SV College of Engineering</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABSTRACT -->
+      <div class="info-section">
+        <h3>📋 Abstract</h3>
+        <p>Cloud computing has greatly improved the storage and accessibility of Electronic Health Records (EHRs) by enabling real-time access, scalability, and cost-effective data management in healthcare systems. However, the adoption of cloud technology also introduces significant security challenges, including unauthorized access, data breaches, and cyberattacks. Since healthcare data is highly sensitive, it requires strong protection mechanisms to ensure confidentiality, integrity, and authentication.</p>
+        <p>To address these challenges, this project proposes a <strong>Hybrid Cryptographic Architecture</strong> for securing healthcare data in the cloud. The system uses <strong>AES-256</strong> for secure data encryption during storage and transmission, <strong>ECDH</strong> for secure key exchange between communicating entities, and <strong>ECDSA</strong> along with <strong>SHA-256</strong> to provide authentication and ensure data integrity. This integrated approach offers a secure, efficient, and scalable framework for enhancing healthcare cloud security.</p>
+      </div>
+
+      <!-- INTRODUCTION -->
+      <div class="info-section">
+        <h3>🌐 Introduction</h3>
+        <p>Cloud computing has significantly improved the storage and management of healthcare data by enabling scalable access to Electronic Health Records (EHRs). However, the increasing use of cloud platforms exposes sensitive medical information to security threats such as data breaches and unauthorized access. The healthcare sector remains one of the most targeted industries for cyberattacks worldwide.</p>
+        <p>Existing systems often fail to provide complete end-to-end protection while maintaining performance efficiency. Therefore, a robust hybrid cryptographic architecture is required to ensure secure and reliable healthcare data management in cloud environments.</p>
+      </div>
+
+      <!-- EXISTING vs PROPOSED -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;" class="ep-grid">
+        <div class="info-section" style="margin-bottom:0;">
+          <h3>⚠️ Existing System — Limitations</h3>
+          <ul class="existing-list">
+            <li>Traditional systems rely on basic symmetric encryption only</li>
+            <li>Data must be decrypted before processing, increasing exposure</li>
+            <li>RBAC fails to track or prevent misuse by authorized users</li>
+            <li>Lack of integrated secure key exchange &amp; digital authentication</li>
+            <li>Confidentiality prioritised while neglecting integrity verification</li>
+            <li>Single-layer security architectures lead to vulnerabilities</li>
+          </ul>
+        </div>
+        <div class="info-section" style="margin-bottom:0;">
+          <h3>✅ Proposed System — Features</h3>
+          <ul class="proposed-list">
+            <li><strong>Hybrid Architecture:</strong> Multiple cryptographic techniques integrated</li>
+            <li><strong>AES-256 Encryption:</strong> Strong confidentiality during storage</li>
+            <li><strong>ECDH Key Exchange:</strong> Securely generates &amp; exchanges encryption keys</li>
+            <li><strong>ECDSA Signatures:</strong> Verifies authenticity, prevents data forgery</li>
+            <li><strong>SHA-256 Hashing:</strong> Detects unauthorized modifications</li>
+            <li><strong>End-to-End Security:</strong> Encryption + Authentication + Key Management</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- MODULES -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-header"><span class="card-title">🧩 Module Descriptions</span></div>
+        <div class="card-body">
+          <div class="module-grid">
+            <div class="module-card">
+              <div class="module-icon">🔐</div>
+              <div class="module-title">User Authentication Module</div>
+              <div class="module-desc">Ensures only authorized individuals (doctors, admins, staff) can access the system. Uses secure passwords and Role-Based Access Control (RBAC) to verify identity before granting access to sensitive medical records.</div>
+            </div>
+            <div class="module-card">
+              <div class="module-icon">🔒</div>
+              <div class="module-title">Data Encryption Module</div>
+              <div class="module-desc">Protects sensitive healthcare data before storage or transmission using AES-256. Even if data is intercepted, it cannot be read without the proper decryption key, maintaining confidentiality of all medical information.</div>
+            </div>
+            <div class="module-card">
+              <div class="module-icon">🔑</div>
+              <div class="module-title">Secure Key Exchange Module</div>
+              <div class="module-desc">Uses Elliptic Curve Diffie-Hellman (ECDH) to safely generate and exchange encryption keys between communicating entities. Ensures keys cannot be intercepted or compromised during transmission.</div>
+            </div>
+            <div class="module-card">
+              <div class="module-icon">✍️</div>
+              <div class="module-title">Digital Signature Verification Module</div>
+              <div class="module-desc">Uses ECDSA to generate and verify digital signatures, ensuring data authenticity and verifying sender identity. Prevents data forgery and ensures only verified entities can send or modify healthcare records.</div>
+            </div>
+            <div class="module-card">
+              <div class="module-icon">🧮</div>
+              <div class="module-title">Data Integrity Verification Module</div>
+              <div class="module-desc">Uses SHA-256 to generate a unique hash for each data record. Any modification to the data changes the hash, allowing the system to detect unauthorized alterations and maintain data integrity throughout storage and transmission.</div>
+            </div>
+            <div class="module-card">
+              <div class="module-icon">☁️</div>
+              <div class="module-title">Cloud Storage Management Module</div>
+              <div class="module-desc">Handles secure storage of encrypted healthcare records. All patient data is stored only after encryption. Enables efficient management of records, allowing authorized users to access data quickly with strict security measures.</div>
+            </div>
+            <div class="module-card">
+              <div class="module-icon">🔓</div>
+              <div class="module-title">Secure Data Access Module</div>
+              <div class="module-desc">Allows authorized users to retrieve and decrypt healthcare data when needed. Access control policies ensure only permitted individuals can view or modify patient records, balancing security with usability.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- UML DIAGRAMS -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-header"><span class="card-title">📐 UML Diagrams</span></div>
+        <div class="card-body">
+          <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1rem;">UML (Unified Modeling Language) is used to represent and design the system, providing graphical representations of different system components and interactions.</p>
+          <div class="uml-grid">
+            <div class="uml-card"><div class="uml-icon">🏗️</div><div class="uml-title">Class Diagram</div><div class="uml-desc">Illustrates structural design — classes, attributes, methods, and relationships between system components managing healthcare data in the cloud.</div></div>
+            <div class="uml-card"><div class="uml-icon">🎭</div><div class="uml-title">Use Case Diagram</div><div class="uml-desc">Shows interactions between users (actors) and the system by representing different functionalities such as login, upload, decrypt, and manage records.</div></div>
+            <div class="uml-card"><div class="uml-icon">📬</div><div class="uml-title">Sequence Diagram</div><div class="uml-desc">Illustrates how system components interact in a specific sequence — the order of messages exchanged between user and system during process execution.</div></div>
+            <div class="uml-card"><div class="uml-icon">⚡</div><div class="uml-title">Activity Diagram</div><div class="uml-desc">Represents the workflow by showing the sequence of activities, decision points, and process steps in the overall system flow of control.</div></div>
+            <div class="uml-card"><div class="uml-icon">🧱</div><div class="uml-title">Component Diagram</div><div class="uml-desc">Shows main components — User, System modules, and Cloud Storage — and how they interact. Encrypted records are organized within packages for secure processing.</div></div>
+            <div class="uml-card"><div class="uml-icon">🖥️</div><div class="uml-title">Deployment Diagram</div><div class="uml-desc">Represents the physical deployment across hardware nodes — how the application is distributed across user systems, application servers, and cloud servers.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYSTEM REQUIREMENTS -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-header"><span class="card-title">⚙️ System Requirements</span></div>
+        <div class="card-body">
+          <div class="req-grid">
+            <div class="req-box">
+              <h4 class="sw">💻 Software Requirements</h4>
+              <div class="req-item"><span class="ri">▸</span><span><strong>OS:</strong> Windows 10 / Windows 11</span></div>
+              <div class="req-item"><span class="ri">▸</span><span><strong>Language:</strong> Python 3.10 or above</span></div>
+              <div class="req-item"><span class="ri">▸</span><span><strong>Crypto Libraries:</strong> PyCryptodome / Cryptography</span></div>
+              <div class="req-item"><span class="ri">▸</span><span><strong>IDE:</strong> VS Code / PyCharm</span></div>
+              <div class="req-item"><span class="ri">▸</span><span><strong>Framework:</strong> Flask (Backend), SQLite (DB)</span></div>
+            </div>
+            <div class="req-box">
+              <h4 class="hw">🖥️ Hardware Requirements</h4>
+              <div class="req-item"><span class="ri">▸</span><span><strong>Processor:</strong> Intel Core i5 or higher</span></div>
+              <div class="req-item"><span class="ri">▸</span><span><strong>RAM:</strong> Minimum 8 GB</span></div>
+              <div class="req-item"><span class="ri">▸</span><span><strong>Storage:</strong> 256 GB SSD or higher</span></div>
+              <div class="req-item"><span class="ri">▸</span><span><strong>Architecture:</strong> 64-bit System</span></div>
+              <div class="req-item"><span class="ri">▸</span><span><strong>Input:</strong> Standard Keyboard and Mouse</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TESTING -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-header"><span class="card-title">🧪 Testing Strategy</span></div>
+        <div class="card-body">
+          <div class="testing-grid">
+            <div class="test-card">
+              <span class="test-badge tb-unit">Unit Testing</span>
+              <div class="test-title">Module-level Testing</div>
+              <div class="test-desc">Tests smallest functional units individually. Performed during development to detect errors early and verify functionality of authentication, encryption, and data access modules.</div>
+            </div>
+            <div class="test-card">
+              <span class="test-badge tb-int">Integration Testing</span>
+              <div class="test-title">Module Interaction Testing</div>
+              <div class="test-desc">Verifies interaction between modules — authentication, encryption, cloud storage, and data retrieval — to ensure they work correctly together as a combined system.</div>
+            </div>
+            <div class="test-card">
+              <span class="test-badge tb-sys">System Testing</span>
+              <div class="test-title">Full System Evaluation</div>
+              <div class="test-desc">Evaluates complete integrated system including AES-256 encryption, ECDH key exchange, ECDSA signatures, SHA-256 integrity verification, and cloud storage modules together.</div>
+            </div>
+            <div class="test-card">
+              <span class="test-badge tb-acc">Acceptance Testing</span>
+              <div class="test-title">Final Validation</div>
+              <div class="test-desc">Confirms the system satisfies requirements in real-world scenarios. Tests: Encryption Accuracy, Secure Key Exchange, Data Integrity, System Performance, and Usability.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FUTURE ENHANCEMENTS -->
+      <div class="info-section">
+        <h3>🚀 Future Enhancements</h3>
+        <ul class="future-list" style="list-style:none;">
+          <li><span class="fi">🏥</span><span><strong>Integration with Nearby Hospitals:</strong> A feature showing a list or map of nearby hospitals based on the user's location for quick referrals.</span></li>
+          <li><span class="fi">🖼️</span><span><strong>Display of Medical Images:</strong> Enhance results with relevant medical images such as affected organ visuals or condition-related diagrams.</span></li>
+          <li><span class="fi">📊</span><span><strong>Criticalness Graphs &amp; Possible Treatments:</strong> Visual graphs indicating how critical a disease prediction is, based on risk level and symptom severity.</span></li>
+          <li><span class="fi">📅</span><span><strong>Health History Tracking:</strong> A timeline of users' health checks and predictions, helping track progress and changes over time.</span></li>
+          <li><span class="fi">💬</span><span><strong>Real-time Chat with Doctors (via API):</strong> Integration with telemedicine services so users can consult verified doctors immediately after a positive prediction.</span></li>
+        </ul>
+      </div>
+
+      <!-- CONCLUSION -->
+      <div class="info-section">
+        <h3>📝 Conclusion</h3>
+        <p>This project presents a comprehensive Hybrid Cryptographic Architecture that effectively addresses the security challenges in healthcare cloud environments. By integrating AES-256 encryption, ECDH key exchange, ECDSA digital signatures, and SHA-256 integrity verification, the system provides a robust multi-layer security framework for Electronic Health Records.</p>
+        <p>The integrated approach ensures confidentiality, integrity, and authentication of sensitive medical data while maintaining operational efficiency. The role-based access control system ensures that only authorized personnel can access patient data, significantly reducing the risk of unauthorized access and data breaches in healthcare cloud environments.</p>
+      </div>
+
+      <!-- REFERENCES -->
+      <div class="info-section">
+        <h3>📚 References</h3>
+        <ul class="ref-list">
+          <li><span class="rn">[1]</span><span>Ghaniaviyanto Ramadhan and Adiwijaya (2024), "Chronic disease prediction using machine learning with data preprocessing handling."</span></li>
+          <li><span class="rn">[2]</span><span>Rakibul Islam and Azrin Sultana (2024), "Prediction of common diseases: the case of diabetes and pre-diabetes."</span></li>
+          <li><span class="rn">[3]</span><span>David Adzrago and Faustine Williams (2024), "Chronic disease prediction by machine learning algorithms."</span></li>
+          <li><span class="rn">[4]</span><span>Yelena Petrosyan and Marta Gwinn (2023), "Using Support Vector Machine Modeling to Predict Common Diseases."</span></li>
+          <li><span class="rn">[5]</span><span>Alexis K. Okoh and Marissa Gunnarsson (2023), "Prevalence of Cardiovascular Disease and Risk Factors Among Former Football Players."</span></li>
+        </ul>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+  const user = Auth.getUser();
+  if (user) {
+    document.getElementById('topbarUserName').textContent = user.name;
+    document.getElementById('avatarInitial').textContent  = user.name[0].toUpperCase();
+  }
+  const roles = { admin:'/admin_dashboard.html', doctor:'/doctor_dashboard.html', patient:'/patient_dashboard.html' };
+  if (user && roles[user.role]) document.getElementById('backBtn').href = roles[user.role];
+  else document.getElementById('backBtn').href = '/login.html';
+</script>
+<style>
+  @media (max-width:700px) { .ep-grid { grid-template-columns:1fr !important; } }
+</style>
+</body>
+</html>
