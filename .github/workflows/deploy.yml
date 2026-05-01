@@ -36,14 +36,21 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          # 🔥 Kill any container using QA ports
+          echo "🚀 Starting QA Deployment..."
+
+          # 🔥 STEP 1: Remove old containers by NAME (fix name conflict)
+          docker rm -f qa-backend qa-frontend || true
+
+          # 🔥 STEP 2: Remove any container using ports (fix port conflict)
           docker ps -q --filter "publish=5002" | xargs -r docker rm -f
           docker ps -q --filter "publish=3002" | xargs -r docker rm -f
 
-          # Pull latest images
+          # 🔥 STEP 3: Pull latest images
           docker pull pavankamasani/qabackend
           docker pull pavankamasani/qafrontend
 
-          # Run containers
+          # 🔥 STEP 4: Run new containers
           docker run -d -p 5002:5000 --name qa-backend pavankamasani/qabackend
           docker run -d -p 3002:80 --name qa-frontend pavankamasani/qafrontend
+
+          echo "✅ QA Deployment Completed Successfully!"
