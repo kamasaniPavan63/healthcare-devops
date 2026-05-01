@@ -10,35 +10,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
-    - name: Docker Login
+    - name: Login to Docker Hub
       run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-    # Backend
+    # 🔹 Build & Push Backend
     - name: Build & Push Backend
       run: |
         docker build -t pavankamasani/devbackend ./backend
         docker push pavankamasani/devbackend
 
-    # Frontend
+    # 🔹 Build & Push Frontend
     - name: Build & Push Frontend
       run: |
         docker build -t pavankamasani/devfrontend ./frontend
         docker push pavankamasani/devfrontend
 
-    # Deploy
-    - name: Deploy DEV
+    # 🔹 Deploy to EC2
+    - name: Deploy DEV to EC2
       uses: appleboy/ssh-action@v0.1.6
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          # 🔥 Kill any container using DEV ports
+          docker ps -q --filter "publish=5001" | xargs -r docker rm -f
+          docker ps -q --filter "publish=3001" | xargs -r docker rm -f
+
+          # Pull latest images
           docker pull pavankamasani/devbackend
           docker pull pavankamasani/devfrontend
 
-          docker rm -f dev-backend dev-frontend || true
-
+          # Run containers
           docker run -d -p 5001:5000 --name dev-backend pavankamasani/devbackend
           docker run -d -p 3001:80 --name dev-frontend pavankamasani/devfrontend
