@@ -10,35 +10,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
-    - name: Docker Login
+    - name: Login to Docker Hub
       run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-    # Backend
+    # 🔹 Build & Push Backend
     - name: Build & Push Backend
       run: |
         docker build -t pavankamasani/qabackend ./backend
         docker push pavankamasani/qabackend
 
-    # Frontend
+    # 🔹 Build & Push Frontend
     - name: Build & Push Frontend
       run: |
         docker build -t pavankamasani/qafrontend ./frontend
         docker push pavankamasani/qafrontend
 
-    # Deploy
-    - name: Deploy QA
+    # 🔹 Deploy to EC2
+    - name: Deploy QA to EC2
       uses: appleboy/ssh-action@v0.1.6
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          # 🔥 Kill any container using QA ports
+          docker ps -q --filter "publish=5002" | xargs -r docker rm -f
+          docker ps -q --filter "publish=3002" | xargs -r docker rm -f
+
+          # Pull latest images
           docker pull pavankamasani/qabackend
           docker pull pavankamasani/qafrontend
 
-          docker rm -f qa-backend qa-frontend || true
-
+          # Run containers
           docker run -d -p 5002:5000 --name qa-backend pavankamasani/qabackend
           docker run -d -p 3002:80 --name qa-frontend pavankamasani/qafrontend
