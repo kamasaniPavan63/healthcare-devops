@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Prod CI/CD Pipeline
 
 on:
   push:
@@ -13,32 +13,44 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    - name: Login to Docker Hub
+    - name: Docker Login
       run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-    - name: Build Backend Image
-      run: docker build -t pavankamasani/backend ./backend
+    # 🔹 Build & Push Backend
+    - name: Build & Push Backend
+      run: |
+        docker build -t pavankamasani/backend ./backend
+        docker push pavankamasani/backend
 
-    - name: Push Backend Image
-      run: docker push pavankamasani/backend
+    # 🔹 Build & Push Frontend
+    - name: Build & Push Frontend
+      run: |
+        docker build -t pavankamasani/frontend ./frontend
+        docker push pavankamasani/frontend
 
-    - name: Build Frontend Image
-      run: docker build -t pavankamasani/frontend ./frontend
-
-    - name: Push Frontend Image
-      run: docker push pavankamasani/frontend
-
-    - name: Deploy to EC2
+    # 🔹 Deploy
+    - name: Deploy PROD
       uses: appleboy/ssh-action@v0.1.6
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          echo "🚀 Deploying PROD..."
+
+          # Remove old containers
+          docker rm -f prod-backend prod-frontend || true
+
+          # Free ports
+          docker ps -q --filter "publish=5000" | xargs -r docker rm -f
+          docker ps -q --filter "publish=3000" | xargs -r docker rm -f
+
+          # Pull images
           docker pull pavankamasani/backend
           docker pull pavankamasani/frontend
 
-          docker rm -f backend frontend || true
+          # Run containers
+          docker run -d -p 5000:5000 --name prod-backend pavankamasani/backend
+          docker run -d -p 3000:80 --name prod-frontend pavankamasani/frontend
 
-          docker run -d -p 5000:5000 --name backend pavankamasani/backend
-          docker run -d -p 3000:80 --name frontend pavankamasani/frontend
+          echo "✅ PROD deployed!"
